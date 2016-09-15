@@ -18,7 +18,7 @@ using namespace Rcpp;
 List lmb(NumericVector x, NumericVector y, NumericVector omega)
 {
   // declare variables
-  double XC,XS,CC,SS,CS,co,si,tauL,ct,st,R,I;
+  double xc,xs,cc,ss,cs,co,si,tauL,ct,st,re,im;
   R_len_t  i,j;
 
   int n  = x.size();
@@ -26,32 +26,32 @@ List lmb(NumericVector x, NumericVector y, NumericVector omega)
   NumericVector amp(fn);
   NumericVector phase(fn);
 
-//#pragma omp parallel for private(i,j,XC,XS,CC,SS,CS,co,si,tauL,ct,st,R,I)
+//#pragma omp parallel for private(i,j,xc,xs,cc,ss,cs,co,si,tauL,ct,st,re,im)
   for(i = 0; i < fn; i++) {
-    XC = 0;
-    XS = 0;
-    CC = 0;
-    SS = 0;
-    CS = 0;
+    xc = 0;
+    xs = 0;
+    cc = 0;
+    ss = 0;
+    cs = 0;
     for(j=0; j < n; j++) {
       co = cos(omega[i]*x[j]);
       si = sin(omega[i]*x[j]);
-      XC = XC + y[j] * co;
-      XS = XS + y[j] * si;
-      CC = CC + co*co;
-      SS = SS + si*si;
-      CS = CS + co*si;
+      xc = xc + y[j] * co;
+      xs = xs + y[j] * si;
+      cc = cc + co*co;
+      ss = ss + si*si;
+      cs = cs + co*si;
     }
-    tauL = atan(2.0 * CS / (CC - SS)) / (2.0*omega[i]);
+    tauL = atan(2.0 * cs / (cc - ss)) / (2.0*omega[i]);
     ct   = cos(omega[i]*tauL);
     st   = sin(omega[i]*tauL);
 
-    R = ct*XC + st*XS;
-    I = ct*XS - st*XC;
+    re = ct*xc + st*xs;
+    im = ct*xs - st*xc;
 
-    amp[i] = sqrt(2.0 / n * (((R*R)/ (ct*ct * CC + 2.0 * ct * st * CS + st*st * SS)) + ((I*I)/ (ct*ct * SS - 2.0 * ct * st * CS + st*st * CC))));
+    amp[i] = sqrt(2.0 / n * (((re*re)/ (ct*ct * cc + 2.0 * ct * st * cs + st*st * ss)) + ((im*im)/ (ct*ct * ss - 2.0 * ct * st * cs + st*st * cc))));
 
-    phase[i] = -omega[i] * tauL - atan2(I, R);
+    phase[i] = -omega[i] * tauL - atan2(im, re);
   }
 
   return List::create( _["amp"] = amp, _["phase"] = phase);

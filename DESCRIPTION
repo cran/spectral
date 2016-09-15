@@ -1,7 +1,7 @@
 Package: spectral
 Type: Package
 Title: Common Methods of Spectral Data Analysis
-Version: 1.0
+Version: 1.0.1
 Author: Martin Seilmayer
 Maintainer: Martin Seilmayer <m.seilmayer@hzdr.de>
 Description: Fourier and Hilbert transforms are utilized to perform several types
@@ -14,7 +14,7 @@ LazyData: TRUE
 RoxygenNote: 5.0.1
 LinkingTo: Rcpp
 Imports: Rcpp
-Packaged: 2016-09-13 07:20:39 UTC; ms5760
+Packaged: 2016-09-15 10:44:25 UTC; ms5760
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2016-09-13 11:45:38
+Date/Publication: 2016-09-15 15:46:39

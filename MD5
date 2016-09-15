@@ -1,4 +1,4 @@
-be336e3471416e101d41afb47d107c73 *DESCRIPTION
+bb7963f9e40702f45565299bd1cc4f9d *DESCRIPTION
 92d5f83d5c55ebbd041fa1ca7e191cdb *NAMESPACE
 c1db9baa6c79ab9d25885317c6d03728 *R/00_pkg_setup.r
 eb41a569dfb16a6152083b8226e90a36 *R/RcppExports.R
@@ -6,7 +6,7 @@ c29bfa71e5d030919462c6ffc89b5c1b *R/analyticFunction.R
 9bb06028b6239dd5bfda97090f9a4411 *R/bandPass.R
 9bd78f6901f793bd832b9370cd1da81a *R/envelope.R
 2dd3591ab7adc7648269dfcde798c9e6 *R/examples/envelopeExample.R
-1fe9bccdd203ba4097fd16778cae7782 *R/examples/lombExample.R
+cccf825f4b5f578c064834f5cb47a255 *R/examples/lombExample.R
 aeb8222ed45db5d263f45d468b7b3d12 *R/examples/specFFTExample.r
 d8295be324e434b8898422b5395fa5b9 *R/examples/waterfallExample.r
 fcea55d90001a171ccbf5a5e66f84d66 *R/filterFFT.R
@@ -36,4 +36,4 @@ fdcf7c9cb6237a10924cbc53ff8aea9c *man/plot.fft.Rd
 3ee1df409780bbb1e78edd9b4ec16266 *man/win.cos.Rd
 66598c6113cba3ab38a9090b3a01fdaf *man/win.tukey.Rd
 64e02121bf102d20297cb0fce8978e78 *src/RcppExports.cpp
-ee124a612566584c9d0bc6ff7d2e702c *src/lmb.cpp
+c8008aa2cb661a634c07400e15f7afe5 *src/lmb.cpp

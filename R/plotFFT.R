@@ -1,5 +1,7 @@
 #' Plot \code{fft}-objects
 #'
+#' This is a wrapper function to plot \code{fft}-class objects.
+#'
 #' @param x Object of the class \code{fft}
 #' @param ... further arguments to the plot functions
 #' @import rasterImage

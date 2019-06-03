@@ -13,10 +13,10 @@ analyticFunction(x)
 Complex valued analytic function
 }
 \description{
-Normaly a causal real valued signal in time has negative frequencies,
+In general a causal real valued signal in time has negative frequencies,
 when a Fourier transform is applied. To overcome this, a complex complement
-can be calculated to compensate the negative frequency spectrum. This is called
-analytic signal or analytic function. The result is a one sided spectrum.
+can be calculated to compensate the negative frequency spectrum. The result is
+called analytic signal or analytic function, which provides a one sided spectrum.
 }
 \details{
 An analytic function \eqn{xa} is composed of the real valued signal representation
@@ -28,15 +28,17 @@ complex vector, which is only non zero until the half of the length. Every compo
 higher than the half of the sampling frequency is zero. Still, the analytic signal
 and its spectrum are a unique representation of the original signal \eqn{x(t)}.
 The new properties enables us to do certain filtering and
-calculations more easy in the spectral space, compared to the standard FFT
+calculations more easily in the spectral space compared to the standard FFT
 approach. Some examples are:
+
 \describe{
  \item{Filtering}{because the spectrum is one sided, the user must only modifiy
  values in the lower half of the vector. This strongly reduces mistakes in indexing.
  See \code{\link{filter.fft}}}
 
 \item{Envelope functions}{Since the Hilbert transform is a perfect phase shifter
- by pi/2, the envelope of a band limited signal can be calculated. See \code{\link{envelope}}}
+ by pi/2, the envelope of a band limited signal can be calculated.
+ See \code{\link{envelope}}}
 
 \item{Calculations}{Deriving and integrating on bandlimited discrete data becomes
  possible, without taking the symmetry of the discrete Fourier transform into
@@ -46,13 +48,13 @@ approach. Some examples are:
 }
 A slightly different approach on the analytic signal can be found in R. Hoffmann
 "Signalanalyse und -erkennung" (Chap. 6.1.2). Here the signal \eqn{x(t)} is split
-into the even and odd part. According to Marko and Fritzsche this two parts can
-be composed to the analytic signal, which lead to the definition with the Hilbert
-transform above.
+into the even and odd part. According to Marko (1985) and Fritzsche (1995)
+this two parts can be composed to the analytic signal, which lead to the
+definition with the Hilbert transform above.
 }
 \references{
-R. Hoffmann, Signalanalyse und -erkennung: eine Einfuehrung fuer Informationstechniker.
- Berlin; Heidelberg: Springer, 1998.
+R. Hoffmann, Signalanalyse und -erkennung: eine Einfuehrung fuer
+ Informationstechniker, Berlin; Heidelberg: Springer, 1998.
 
 H. Marko, Systemtheorie: Methoden und Anwendungen fuer ein- und mehrdimensionale
  Systeme. 3. Aufl., Berlin: Springer, 1995.
@@ -60,4 +62,3 @@ H. Marko, Systemtheorie: Methoden und Anwendungen fuer ein- und mehrdimensionale
 G. Fritzsche, Signale und Funktionaltransformationen - Informationselektronik.
  Berlin: VEB Verlag Technik, 1985
 }
-

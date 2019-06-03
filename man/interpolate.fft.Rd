@@ -27,4 +27,3 @@ the complex amplitude with the associated frequency is taken and evaluated
 at given points \code{xout}. Doing that for all frequencies and amplitudes
 will give the interpolation.
 }
-

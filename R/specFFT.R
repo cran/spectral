@@ -1,33 +1,38 @@
-#' 1D/2D spectrum of the Fourier transform
+#' 1D/2D/nD (multivariate) spectrum of the Fourier transform
 #'
-#' This function calculates the Fourier spectrum of a given 1D or 2D data object.
-#' It returns a user friendly object, which contains one or two frequency vectors
-#' to map the complex amplitudes (vector or matirx) to the corresponding
-#' frequencies. The output is already normalized and the frequencies can be seen
-#' in terms of \eqn{1/\Delta x}-units.
+#' This function calculates the Fourier spectrum of a given data object. The
+#' dimension of the array can be of arbitary size e.g. 3D or 4D.
+#' The goal is to return a user friendly object, which contains as much frequency
+#' vectors as ordinates of the array are present. \code{spec.fft} provides the
+#' ability to center the spectrum along multiple axis. The output is already
+#' normalized to the sample count and the frequencies are given in terms of
+#' \eqn{1/\Delta x}-units.
 #'
-#' @param y 1D data vector, y coordinate of a 2D matrix or object of class \code{fft}
-#' @param x x-coordinate of the data in y vector or z matrix
+#' @param y 1D data vector, y coordinate of a 2D matrix, nD (even 2D) array
+#'          or object of class \code{fft}
+#' @param x x-coordinate of the data in \code{y} or \code{z}. If \code{y} is an array, \code{x} must be a named list \code{x = list(x = ..., y = ...)}.
 #' @param z optional 2D matrix
-#' @param center logical parameter, if the spectrum should be centered or not
-#' @param inverse logical parameter, if the back transformation should be performed
+#' @param center logical vector, indicating which axis to center in frequency space
 #'
-#' @return An object of the type \code{fft} is returned. This contains the
-#' original dataset and the corresponding spectrum, with "reasonable" frequency vectors.
+#' @return An object of the type \code{fft} is returned. It contains the
+#' spectrum, with "reasonable" frequency vectors along each axis.
 #'
 #' @seealso \link{plot.fft}
 #' @example R/examples/specFFTExample.r
+#'
+#' @concept Fourier Transform
+#'
 #' @export
-spec.fft <- function(y = NULL,
-                     x = NULL,
-                     z = NULL,
-                     center = T,
-                     inverse = F)
+spec.fft <- function(y = NULL, # vector or nD-array
+                     x = NULL, # list of ordinates
+                     z = NULL, # optional in 2D case
+                     center = T # single or vector
+                    )
 {
-  mode <- "1D"
-  dimZ <- NULL
-  fx <- NULL
-  fy <- NULL
+  mode <- ""
+  res <- NULL # stores result
+  inverse = F
+
 
   # If an object of class "fft" is given, all variables are going
   # to be assigned properly
@@ -35,191 +40,207 @@ spec.fft <- function(y = NULL,
   {
     if (y$mode == "waterfall")
       stop("Found time dependend analysis. Cannot work with that.")
+
     # x,y = spatial vectors, get defined if necessary
-    if (!is.null(y$x) | !is.null(y$y))
-    {
-      mode   <- y$mode
-      center <- y$center
-      z <- y$z
-      x <- y$x
-      y <- y$y
-    }
-    # fx, fy frequency vectors are defined -> inverse
-    if (!is.null(y$fx) | !is.null(y$fy))
-    {
-      mode    <- y$mode
-      center  <- y$center
-      inverse <- T
 
-      if (mode == "1D")
+    # looking for frequency vectors
+    nf <- grep(pattern = "f",x = substr(names(y),1,1))
+
+    # reconstructing ordinates
+    x <- list()
+    for(i in nf)
+    {
+      Tmax <- 1/min(diff(y[[i]]))
+      x[[length(x) + 1]] <- seq(0,Tmax - 1/diff(range(y[[i]])),length.out = length(y[[i]]))
+    }
+    names(x) <- substr(names(y)[nf],2,nchar(names(y)[nf]))
+
+    center <- y$center
+    mode <- y$mode
+    inverse <- T
+    y <- y$A
+  }
+
+  ### Cases of input data
+  #
+  # 1D: x,y = vector z = NULL
+  #       y = vector, x,z = NULL
+  #
+  # 2D: x,y = vector z = matrix
+  #       y = matrix
+  #
+  # nD: x = List of ordinates, y = array, z = NUll
+  #
+  #
+  if(mode(inverse) != "logical" | length(inverse) != 1)
+    stop("Wrong datatype or length of inverse.")
+
+  if(!inverse)
+  {
+    # 1D case
+    if ( is.vector(y) & is.null(z) )
+    {
+      if(!is.vector(x))
       {
-        x <- y$fx
-        y <- y$A
-
+        if(!is.null(x))
+          stop("Wrong input data on x")
+        if(is.null(x))
+          x <- 1:length(y)
       }
-      if (mode == "2D")
-      {
-        z <- y$A
-        x <- y$fx
-        y <- y$fy
-      }
+      x <- list(x = x)
+      mode = "1D"
     }
-  }
 
-  # If y is a matrix, correct the assignment of the variables.
-  if (is.matrix(y))
-  {
-    z <- y
-    y <- NULL
-    x <- NULL
-  }
-
-  # check variables
-  if (!is.null(z))
-  {
-    if (!is.matrix(z))
-      stop("z is not a matrix")
-    mode <- "2D"
-    dimZ <- dim(z)
-  }
-
-  if (is.null(y))
-  {
-    ifelse(mode == "2D", y <- 1:dimZ[2], stop("y-value is missing"))
-    if (inverse)
-      y <- seq(0, 1, length.out = length(y))
-  }
-  if (is.null(x))
-  {
-    if (mode == "2D")
-      x <- 1:dimZ[1]
-    if (mode == "1D")
-      x <- 1:length(y)
-    if (inverse)
-      x <- seq(0, 1, length.out = length(y))
-  }
-
-  nx <- length(x)
-  ny <- length(y)
-
-  if (mode == "2D")
-  {
-    if ((dimZ[1] == ny) & (dimZ[2] == nx) & (dimZ[1] != dimZ[2]))
+    # 2D case
+    if( is.matrix(y) & !is.list(x))
     {
-      z <- t(z)
-      dimZ <- dim(z)
-      warning("!!! I transposed z !!!")
+      if(!is.null(x) | !is.null(z))
+        stop("Wrong input data!")
+
+      z <- y
+      y <- NULL
     }
-    if ((dimZ[1] != nx) &
-        (dimZ[2] != ny))
-      stop("x,y dimensions do not fit to z")
-  }
 
-  if ((mode == "1D") & (nx != ny))
-    stop("x,y lengths differ")
+    if( is.matrix(z))
+    {
+      if(is.null(x))
+        x <- 1:dim(z)[1]
+      if(is.null(y))
+        y <- 1:dim(z)[2]
 
-  # end of variable checks
+      if(length(x) != dim(z)[1] | length(y) != dim(z)[2])
+        stop("x,y dimensions do not fit to z!")
 
-  if (center)
-  {
-    if (mode == "1D")
+      x <- list(x = x, y = y)
+      y <- z
+      z <- NULL
+    }
+
+    # nD case
+    if(is.array(y))
+    {
+      if(!is.null(x))
+        if(length(dim(y)) != length(x))
+          stop("nD array Dimensions do not fit to length of x")
+
+      if(!is.null(z))
+        warning("Ignoring z input!")
+
+      # generate x ordinates for nD array
+      if(is.null(x))
+      {
+        x <- list()
+        for(i in dim(y))
+          x[[length(x) + 1]] <- 1:i
+        names(x) <- paste(1:length(x))
+      }
+
+      mode <- ifelse(length(dim(y)) == 2,"2D","nD")
+    }
+
+    # correct center variable
+    if(mode(center) == "numeric")
+    {
+      tmp <- rep(F, length(dim(y)))
+      tmp[center] <- T
+      center <- tmp
+    }
+    if(mode(center) != "logical")
+      stop("Wrong data type of center. A logical vector is assumed.")
+    if(length(center) == 1)
+      center <- rep(center,length(dim(as.array(y))))
+
+    # end of variable checks
+
+    ### calculate frequencies
+    f <- lapply(x,function(x)
+    {
+      nx <- length(x)
+      seq(0, (nx - 1) / (min(diff(x)) * nx), length.out = nx)
+    }
+    )
+    names(f) <- paste("f",names(x),sep="")
+
+    ### center axis
+
+    for(j in which(center))
     {
       # centered FFT via binary modulation with fs/2
-      if (!inverse)
-        y <- y * (-1) ^ (1:ny)
+      # in nD case after Gonzalez & Wintz (1977) Digital Image Processing p.53
+      # centering remains a modulation as well
+      if(mode != "1D")
+      {
+        s <- paste(paste(rep(" ,",length(dim(y))-1),collapse = "")," ",sep = "")
+        substr(s,2*(j-1) + 1,2*(j-1) + 1) <- "i"
+        s <- paste("y[",s,"] <- y[",s,"] * (-1)^(i)")
+        for(i in 1:dim(y)[j])
+          eval(parse(text = s))
+      }
+      else
+      {
+        y <- y * (-1) ^ (1:length(y))
+      }
 
-      Ts <- min(diff(x))
-      fx <- seq(-(nx) / (2 * Ts * nx), (nx - 2) / (2 * Ts * nx), length.out = nx)
-
-      A <- fft(y, inverse = inverse) * 1 / ny
-    }
-
-    if (mode == "2D")
-    {
-      # centered spectrum: Gonzalez & Wintz (1977) Digital Image Processing p.53
-      # is a modulation as well
-      if (!inverse)
-        z <- z * (-1) ^ (row(z) + col(z))
-
-      Ts  <- min(diff(x))
-      fx  <- seq(-(nx) / (2 * Ts * nx), (nx - 2) / (2 * Ts * nx), length.out = nx)
-
-      Ty  <- min(diff(y))
-      fy  <- seq(-(ny) / (2 * Ty * ny), (ny - 2) / (2 * Ty * ny), length.out = ny)
-
-      A <- fft(z, inverse = inverse) / length(z)
+      ### recalculate frequencies
+      nf <- length(f[[j]])
+      Ts <- min(diff(x[[j]]))
+      f[[j]] <- seq(-(nf) / (2 * Ts * nf), (nf - 2) / (2 * Ts * nf), length.out = nf)
     }
   }
-  if (!center)
+
+  ### Doing FFT ###
+
+  Y <- fft(y, inverse = inverse)
+
+  ### correct inverse or non inverse mode ###
+  if(!inverse)
   {
-    if (mode == "1D")
-    {
-      fx <- seq(0, (nx - 1) / (min(diff(x)) * nx), length.out = nx)
-      A  <- fft(y, inverse = inverse) / ny
-    }
-
-    if (mode == "2D")
-    {
-      fx <- seq(0, (nx - 1) / (min(diff(x)) * nx), length.out = nx)
-      fy <- seq(0, (ny - 1) / (min(diff(y)) * ny), length.out = ny)
-
-      A <- fft(z, inverse = inverse) / length(z)
-    }
+    res <- f
+    res$A <- Y/length(Y)
+    res$mode <- mode
+    res$center <- center
+    class(res) <- "fft"
   }
-
-  if (!inverse)
+  if(inverse)
   {
-    if (mode == "1D")
-      res <- list(
-        fx = fx,
-        A = A,
-        mode = mode,
-        center = center
-      )
-    if (mode == "2D")
-      res <- list(
-        fx = fx,
-        fy = fy,
-        A = A,
-        mode = mode,
-        center = center
-      )
-  }
-
-  if (inverse)
-  {
-    x <- seq(0, (nx - 1) / diff(range(x)), length.out = nx)
-
-    if (mode == "1D")
+    # un-modulate incase of centering
+    for(j in which(center))
     {
-      y <- A * ny # denormalization
-      if (center)
-        y <- y * (-1) ^ (1:ny)
-      res <- list(
-        x = x,
-        y = y,
-        mode = mode,
-        center = center
-      )
+      # centered FFT via binary modulation with fs/2
+      # in nD case after Gonzalez & Wintz (1977) Digital Image Processing p.53
+      # centering remains a modulation as well
+      if(mode != "1D")
+      {
+        s <- paste(paste(rep(" ,",length(dim(y))-1),collapse = "")," ",sep = "")
+        substr(s,2*(j-1) + 1,2*(j-1) + 1) <- "i"
+        s <- paste("Y[",s,"] <- Y[",s,"] * (-1)^(i)")
+        for(i in 1:dim(y)[j])
+          eval(parse(text = s))
+      }
+      else
+      {
+        Y <- Y * (-1) ^ (1:length(Y))
+      }
     }
 
-    if (mode == "2D")
+    if(mode == "1D")
     {
-      y <- seq(0, (ny - 1) / diff(range(y)), length.out = ny)
-      A <-
-        A * length(A) # denormalization
-      if (center)
-        A <- A * (-1) ^ (row(A) + col(A))
-      res <- list(
-        x = x,
-        y = y,
-        z = A,
-        mode = mode,
-        center = center
-      )
+      res <- x
+      res$y <- Y
+    }
+    if(mode == "2D")
+    {
+      res <- x
+      res$z <- Y
+    }
+    else
+    {
+      res$x <- x
+      res$y <- Y
     }
 
+
   }
-  class(res) <- "fft"
+
   return(res)
 }

@@ -3,16 +3,17 @@
 #' A \code{waterfall}-diagramm displays the local frequency in dependence of
 #' or spatial vector. One can then locate an event in time or space.
 #'
-#' Each frequency is evaluated by calculating the demodulation. This is equivalent
-#' to the envelope function of the bandpass filtered signal. The frequency of
-#' interest defines automatically the center frequency of the applied bandpass
-#' with the bandwidth \eqn{BW}:
+#' Each frequency is evaluated by calculating the amplitude demodulation, which
+#' is equivalent to the envelope function of the bandpass filtered signal.
+#' The frequency of interest defines automatically the center frequency of the
+#' applied bandpass with the bandwidth \eqn{BW}:
 #' \deqn{BW = f0 / 4, BW < 4df -> BW = 4df, BW > width * df -> BW = width * df}
 #' The minimal frequency is \eqn{df} and \eqn{f0} denotes the center
 #' frequency of the bandpass.
 #' With increasing frequency the bandwidth becomes wider, which lead to a variable
-#' resolution in space and frequency. This is comparable to the wavelet transform,
-#' which scales the wavelet according to the frequency.
+#' resolution in space and frequency. This is comparable to the wavelet
+#' (or Gabor) transform,
+#' which scales the wavelet (window) according to the frequency.
 #' However, the necessary bandwidth is changed by frequency to take the
 #' uncertainty principle into account. Slow oscillating events are measured precisely
 #' in frequency and fast changing processes can be determined more exact in space.
@@ -53,7 +54,7 @@ waterfall <-
 
     fast_envelope <- function(y, x, fc, BW, nf)
     {
-      Y <- BP(Y.f, fc, BW, nf) * fft(y) / n * sY.f
+      Y <- BP(Y.f, fc, BW, nf) * fft(y) / length(y) * sY.f
       hk <- base::Mod(fft(Y + 1i * Y, inverse = T) / sqrt(2))
       return(hk)
     }

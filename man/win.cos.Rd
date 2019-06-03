@@ -15,4 +15,3 @@ This window function returns a vector of weights with means of a cosine window
 \seealso{
 \code{\link{Windowfunctions}}
 }
-

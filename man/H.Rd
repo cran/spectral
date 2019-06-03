@@ -18,4 +18,3 @@ to a real vauled signal. It is calculated in the complex frequency space of the
 signal by using the Fourier transform. Finally, calculating \eqn{f = y + i*H(y)}
 gives the analytic signal, with a one sided spectrum. (See \code{\link{analyticFunction}})
 }
-

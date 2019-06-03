@@ -14,11 +14,11 @@ real valued envelope function of the signal
 }
 \description{
 The envelope of an amplitude modulated signal can be calculated by using the
-Hilbert-transform of the signal or the analytic signal.
+Hilbert-transform \eqn{H(y)} of the signal or the analytic signal.
 }
 \details{
-A modulated function \eqn{y(x) = A(x) * cos(\omega * x)} can be demodulated
-as follows:
+An amplitude  modulated function \eqn{y(x) = A(x) * cos(\omega * x)} can be
+demodulated as follows:
 
 \deqn{A(x)^2 = y(x)^2 + H(y(x))^2}
 
@@ -40,4 +40,3 @@ plot(x,y,type="l",lwd=1,col="darkgrey",lty=2,ylab="y",main="Spectral filtering")
 lines(x,ye)
 legend("bottomright",c("modulated","envelope"),col=c("grey","black"),lty=c(2,1))
 }
-

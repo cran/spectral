@@ -4,8 +4,8 @@
 \alias{filter.fft}
 \title{Filter in the frequency domain}
 \usage{
-filter.fft(y = stop("y-value is missing"), x = NULL, fc = 0, BW = 0,
-  n = 3)
+filter.fft(y = stop("y-value is missing"), x = NULL, fc = 0,
+  BW = 0, n = 3)
 }
 \arguments{
 \item{y}{numeric data vector}
@@ -52,4 +52,3 @@ lines(x,y_filt)
 legend("topright",c("org","noisy","filtered"),col=c("grey","darkgrey","black")
         ,lty=c(1,2,1),lwd=c(5,1,1))
 }
-

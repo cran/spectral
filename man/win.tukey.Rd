@@ -19,4 +19,3 @@ at the beginning and the end. And it is 1 in the middle.
 \seealso{
 \code{\link{Windowfunctions}}
 }
-

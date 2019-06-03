@@ -38,7 +38,7 @@
 #' the amplidudes. It determines which frequencies are used. Lower values give
 #' more frequencies.
 #' @param filt vector or matix of frequencies (ranges) in which to select the frequencies
-#' @param phase set the method to determine the phase at a given frequency (moegliche werte???)
+#' @param phase set the method to determine the phase at a given frequency
 #' @return This function returns a list which contains the reconstruction according to the
 #' \code{lomb}-object and \code{newx} for the given data \code{x} and \code{y}. The returned
 #' object contains the following:
@@ -224,7 +224,7 @@ filter.lomb <-
 
         # non-linear optimization
         nfit <-
-          stats::nls(l$y ~ A[i] * cos(2 * pi * f[i] * l$x + P), start = list(P =
+          stats::nls(y ~ A[i] * cos(2 * pi * f[i] * x + P), l,start = list(P =
                                                                                tmp_phi))
         phi <- c(phi, coef(nfit)[1])
       }

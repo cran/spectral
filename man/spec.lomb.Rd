@@ -4,54 +4,94 @@
 \alias{spec.lomb}
 \title{Lomb-Scargle Periodigram}
 \usage{
-spec.lomb(y = stop("Missing y-Value"), x = stop("Missing x-Value"),
-  f = NULL, ofac = 4)
+spec.lomb(x = NULL, y = stop("Missing y-Value"), f = NULL,
+  ofac = 1, w = NULL, mode = "normal", maxMem = 100)
 }
 \arguments{
-\item{y}{data vector}
+\item{x}{sampling vector or data frame \code{data.frame(x1, x2, x3, ...)}}
 
-\item{x}{sampling vector}
+\item{y}{input data vector or data frame \code{data.frame(x1, x2, ..., val)}}
 
-\item{f}{frequeny vector}
+\item{f}{optional frequency vector / data frame. If not supplied \code{f} is calculated.}
 
 \item{ofac}{in case \code{f=NULL} this value controlls the amount of frequency
 oversampling.}
+
+\item{w}{weights for data. It must be a 1D vector.}
+
+\item{mode}{\code{"normal"} calculates the normal Lomb-Scargle periodogram;
+\code{"generalized"} calculates the generalized Lomb-Scargle periodogram including
+floating average and weights.}
+
+\item{maxMem}{sets the amount of memory (in MB) to utilize, as a rough approximate.}
 }
 \value{
-The \code{spec.lomb} function returns an object of the type \code{lomb},
+The \code{spec.lomb} function returns an object of the class \code{lomb},
 which is a \code{list} containg the following parameters:
 \describe{
  \item{\code{A}}{A vector with amplitude spectrum}
  \item{\code{f}}{corresponding frequency vector}
  \item{\code{phi}}{phase vector}
+ \item{\code{PSD}}{power spectral density normalized to the sample variance}
+ \item{\code{floatAvg}}{floating average value only in case of
+                         \code{mode == "generalized"}}
  \item{\code{x,y}}{original data}
  \item{p}{p-value as statistical measure}
 }
 }
 \description{
-The Lomb-Scargle periodigram represents an
-statistical estimator for the amplitude and
-phase for a given frequency.
+The Lomb-Scargle periodigram represents a statistical estimator for the
+amplitude and phase at a given frequency. This function takes also multivariate
+(n-dimensional) input data.
 }
 \details{
-A given time series does not need to be evenly sampled. This means a time series mainly
-consists of data pairs \code{x} and \code{y}, which store the data and the sampling
-position (e.g. in time). Additionally, this method enables the user to analyse
-the data with respect to a given frequency vector, which can be artifical dense.
+Since the given time series does not need to be evenly sampled, the data
+mainly consists of data pairs \code{x1, x2, x3, ...} (sampling points) and (one)
+corresponding value \code{y}, which stores the realisation/measurement data.
+As can be seen from the data definition above multivariate (n-dimensional)
+input data is allowed and properly processed.
+
+Two different methods are implemented: the standard Lomb-Scargle method with
+
+\eqn{y(t) = a * cos(\omega (t - \tau)) + b * sin(\omega (t - \tau))}
+
+as model function and the generalized Lomb-Scargle (after Zechmeister 2009)
+method with
+
+\eqn{y(t) = a * cos(\omega t) + b * sin(\omega t) + c}
+
+as model function, which investigates a floating average parameter \eqn{c}
+as well.
+
+Both methods can be supplied by an artifical dense frequency vector \code{f}.
+In conjunction with the resulting phase information the user might be able to
+build a "Fourier" spectrum to reconstruct or interpolate the timeseries in equally
+spaced sampling. Remind the band limitation which must be fulfilled for this.
+
 \describe{
- \item{\code{ofac}}{If the user does not provide a corresponding frequency vector, the
- \code{ofac} parameter causes the function to estimate \deqn{nf = ofac*length(x)/2}
- equidistant frequencies.}
- \item{\code{p}-value}{The \code{p}-value gives the probability, wheater the
- estimated amplitude is NOT significant. However, if \code{p} tends to zero the
+ \item{f}{The frequencies should be stored in a 1D vector or -- in case of
+  multivariate analysis -- in a \code{data.frame} structure to preserve variable names}
+ \item{\code{ofac}}{If the user does not provide a corresponding frequency
+ vector, the \code{ofac} parameter causes the function to estimate
+ \deqn{nf = ofac*length(x)/2} equidistant frequencies.}
+ \item{\code{p}-value}{The \code{p}-value (aka false alarm probability FAP)
+ gives the probability, wheater the estimated amplitude is NOT significant.
+ However, if \code{p} tends to zero the
  amplidutde is significant. The user must decide which maximum value is acceptable,
  until an amplitude is not valid.}
 }
+
+If missing values \code{NA} or \code{NaN} appear in any column, the whole row
+is excluded from calculation.
+
+In general the function calculates everything in a vectorized manner, which
+speeds up the procedure. If the memory requirement is more than \code{maxMem},
+the calculation is split into chunks which fit in the memory size.
 }
 \examples{
 # create two sin-functions
 x_orig <- seq(0,1,by=1e-2)
-y_orig <- sin(10*2*pi*x_orig) + 0.3*sin(2*2*pi*x_orig)
+y_orig <- sin(10*2*pi*x_orig) + 0.1*sin(2*2*pi*x_orig)
 
 # make a 10\% gap
 i <- round(length(x_orig)*0.2) : round(length(x_orig)*0.3)
@@ -60,12 +100,14 @@ y <- y_orig
 x[i] <- NA
 y[i] <- NA
 
+
 # calculating the lomb periodogram
-l <- spec.lomb(x = x, y = y)
+l <- spec.lomb(x = x, y = y,ofac = 20,mode = "normal")
+
 # select a frequency range
 m <- rbind(c(9,11))
 # select and reconstruct the most significant component
-l2 = filter.lomb(l, x_orig, filt=m)
+l2 = filter.lomb(l, x_orig, filt = m)
 
 # plot everything
 par(mfrow=c(2,1),mar = c(4,4,2,4))
@@ -75,17 +117,70 @@ legend("bottomleft",c("gapped","10Hz component"),lty=c(1,2))
 
 plot(l,main = "Spectrum")
 
+
+### Multivariate -- 3D Expample ###
+require(lattice)
+fx <- 8.1
+fy <- 5
+fz <- 2
+
+# creating frequency space
+f <- expand.grid( fx = seq(-10,10,by = 0.25)
+                  ,fy = seq(-10,10,by = 0.25)
+                  ,fz = 0:3
+)
+
+# creating spatial space
+pts <- expand.grid( x = seq(0,1,by = 0.025)
+                   ,y = seq(0,1,by = 0.025)
+                   ,z = seq(0,1,by = 0.025)
+)
+
+# gapping 30\%
+i <- sample(1:dim(pts)[1],0.7*dim(pts)[1])
+pts <- pts[i,]
+
+# caluculating function
+pts$val <- cos(2*pi*(  fx*pts$x
+                     + fy*pts$y
+                     + fz*pts$z
+                    ) + pi/4
+              )
+
+# display with lattice
+levelplot(val~x+y,pts,subset = z == 0,main = "with z = 0")
+
+# calculating lomb takes a while
+# or we sample only a few points
+# which enlarges the noise but accelerates the calculation
+l <- spec.lomb(y = pts[sample(1:dim(pts)[1],5e2),]
+               ,f = f
+               ,mode = "generalized"
+               )
+
+# name the stripes
+l$fz_lev <- factor(x = paste("fz =",l$fz)
+)
+
+# display output
+levelplot(PSD~fx+fy|fz_lev,l)
+
 }
 \references{
-A. Mathias, F. Grond, R. Guardans, D. Seese, M. Canela, H. H. Diebner, und G. Baiocchi,
-"Algorithms for spectral analysis of irregularly sampled time series",
-Journal of Statistical Software, 11(2), pp. 1--30, 2004.
+A. Mathias, F. Grond, R. Guardans, D. Seese, M. Canela, H. H. Diebner,
+and G. Baiocchi, "Algorithms for spectral analysis of irregularly sampled
+time series", Journal of Statistical Software, 11(2), pp. 1--30, 2004.
 
 J. D. Scargle, "Studies in astronomical time series analysis. II - Statistical
- aspects of spectral analysis of unevenly spaced data", The Astrophysical Journal,
- 263, pp. 835--853, 1982.
+aspects of spectral analysis of unevenly spaced data", The Astrophysical Journal,
+263, pp. 835--853, 1982.
+
+M. Zechmeister and M. Kurster, "The generalised Lomb-Scargle periodogram.
+A new formalism for the floating-mean and Keplerian periodograms",
+Astronomy & Astrophysics, 496(2), pp. 577--584, 2009.
 }
 \seealso{
 \code{\link{filter.lomb}}
 }
-
+\concept{Lomb Scargle}
+\concept{Periodogram}

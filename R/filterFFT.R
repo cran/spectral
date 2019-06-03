@@ -48,7 +48,7 @@ filter.fft <-
     # calculate analytical function
     y.ana <- analyticFunction(y)
     # calculate spectrum
-    FT <- spec.fft(analyticFunction(y),x,center = F)
+    FT <- spec.fft(y = y.ana,x = x,center = F)
     # calculate weights for filtering
     w <- BP(FT$fx,fc,BW,n)
 

@@ -18,7 +18,7 @@ more frequencies.}
 
 \item{filt}{vector or matix of frequencies (ranges) in which to select the frequencies}
 
-\item{phase}{set the method to determine the phase at a given frequency (moegliche werte???)}
+\item{phase}{set the method to determine the phase at a given frequency}
 }
 \value{
 This function returns a list which contains the reconstruction according to the
@@ -64,4 +64,3 @@ quadrature-demodulation technique.
 \item \code{phase=="fit"}... non-linear least squares fit with \code{stats::nls}
 }
 }
-

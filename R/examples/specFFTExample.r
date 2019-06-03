@@ -54,6 +54,57 @@ plot(
   z.cex = 1
 )
 
+# 3D example with a propagating wave
+####################################
+
+# sampling vector
+x <- list(x = seq(0,2,by = 0.05)[-1]
+          ,y = seq(0,1, by = 0.05)[-1]
+          ,z = seq(0,1, by = 0.1)[-1]
+)
+
+# initializing array
+m <- array(data = 0,dim = sapply(x, length))
+
+for(i in 1:length(x$x))
+  for(j in 1:length(x$y))
+    for(k in 1:length(x$z))
+      m[i,j,k] <- cos(2*pi*(5*x$x[i] + 4*x$y[j] + 2*x$z[k])) + sin(2*pi*(2*x$x[i]))^2
+
+FT <- spec.fft(x = x, y = m, center = c(TRUE,TRUE,FALSE))
+
+par(mfrow = c(2,2))
+# plotting m = 0
+rasterImage2( x = FT$fx
+              ,y = FT$fy
+              ,z = abs(FT$A[,,1])
+              ,zlim = c(0,0.5)
+              ,main="m = 0"
+              )
+
+# plotting m = 1
+rasterImage2( x = FT$fx
+              ,y = FT$fy
+              ,z = abs(FT$A[,,2])
+              ,zlim = c(0,0.5)
+              ,main="m = 1"
+)
+
+# plotting m = 2
+rasterImage2( x = FT$fx
+              ,y = FT$fy
+              ,z = abs(FT$A[,,3])
+              ,zlim = c(0,0.5)
+              ,main="m = 2"
+)
+rasterImage2( x = FT$fx
+              ,y = FT$fy
+              ,z = abs(FT$A[,,4])
+              ,zlim = c(0,0.5)
+              ,main="m = 3"
+)
+
+
 
 # calculating the derivative with the help of FFT
 ################################################
@@ -72,7 +123,7 @@ FT <- spec.fft(y = y, center = TRUE)
 # calculating the first derivative
 FT$A <- FT$A * 2 * pi * 1i * FT$fx
 # back transform
-dm <- spec.fft(FT, inverse = TRUE)
+dm <- spec.fft(FT)
 
 # plot
 par(mfrow=c(1,1))
@@ -84,7 +135,7 @@ plot(
   lty = 2,
   ylim = c(-4, 3)
 )
-# add some points to the line for the numerical result 
+# add some points to the line for the numerical result
 points(approx(x, Re(dm$y) / dx, n = 100))
 # analytical result
 curve(-3 * x ^ 2 + 3,

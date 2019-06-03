@@ -33,4 +33,3 @@ points(y_tuk,pch=17)
 
 
 }
-

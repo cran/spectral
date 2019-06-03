@@ -12,7 +12,7 @@
 \item{...}{further arguments to the plot functions}
 }
 \description{
-Plot \code{fft}-objects
+This is a wrapper function to plot \code{fft}-class objects.
 }
 \examples{
 # See spec.fft
@@ -20,4 +20,3 @@ Plot \code{fft}-objects
 \seealso{
 \code{\link{spec.fft}}
 }
-

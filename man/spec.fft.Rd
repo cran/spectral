@@ -2,31 +2,32 @@
 % Please edit documentation in R/specFFT.R
 \name{spec.fft}
 \alias{spec.fft}
-\title{1D/2D spectrum of the Fourier transform}
+\title{1D/2D/nD (multivariate) spectrum of the Fourier transform}
 \usage{
-spec.fft(y = NULL, x = NULL, z = NULL, center = T, inverse = F)
+spec.fft(y = NULL, x = NULL, z = NULL, center = T)
 }
 \arguments{
-\item{y}{1D data vector, y coordinate of a 2D matrix or object of class \code{fft}}
+\item{y}{1D data vector, y coordinate of a 2D matrix, nD (even 2D) array
+or object of class \code{fft}}
 
-\item{x}{x-coordinate of the data in y vector or z matrix}
+\item{x}{x-coordinate of the data in \code{y} or \code{z}. If \code{y} is an array, \code{x} must be a named list \code{x = list(x = ..., y = ...)}.}
 
 \item{z}{optional 2D matrix}
 
-\item{center}{logical parameter, if the spectrum should be centered or not}
-
-\item{inverse}{logical parameter, if the back transformation should be performed}
+\item{center}{logical vector, indicating which axis to center in frequency space}
 }
 \value{
-An object of the type \code{fft} is returned. This contains the
-original dataset and the corresponding spectrum, with "reasonable" frequency vectors.
+An object of the type \code{fft} is returned. It contains the
+spectrum, with "reasonable" frequency vectors along each axis.
 }
 \description{
-This function calculates the Fourier spectrum of a given 1D or 2D data object.
-It returns a user friendly object, which contains one or two frequency vectors
-to map the complex amplitudes (vector or matirx) to the corresponding
-frequencies. The output is already normalized and the frequencies can be seen
-in terms of \eqn{1/\Delta x}-units.
+This function calculates the Fourier spectrum of a given data object. The
+dimension of the array can be of arbitary size e.g. 3D or 4D.
+The goal is to return a user friendly object, which contains as much frequency
+vectors as ordinates of the array are present. \code{spec.fft} provides the
+ability to center the spectrum along multiple axis. The output is already
+normalized to the sample count and the frequencies are given in terms of
+\eqn{1/\Delta x}-units.
 }
 \examples{
 # 1D Example with two frequencies
@@ -85,6 +86,57 @@ plot(
   z.cex = 1
 )
 
+# 3D example with a propagating wave
+####################################
+
+# sampling vector
+x <- list(x = seq(0,2,by = 0.05)[-1]
+          ,y = seq(0,1, by = 0.05)[-1]
+          ,z = seq(0,1, by = 0.1)[-1]
+)
+
+# initializing array
+m <- array(data = 0,dim = sapply(x, length))
+
+for(i in 1:length(x$x))
+  for(j in 1:length(x$y))
+    for(k in 1:length(x$z))
+      m[i,j,k] <- cos(2*pi*(5*x$x[i] + 4*x$y[j] + 2*x$z[k])) + sin(2*pi*(2*x$x[i]))^2
+
+FT <- spec.fft(x = x, y = m, center = c(TRUE,TRUE,FALSE))
+
+par(mfrow = c(2,2))
+# plotting m = 0
+rasterImage2( x = FT$fx
+              ,y = FT$fy
+              ,z = abs(FT$A[,,1])
+              ,zlim = c(0,0.5)
+              ,main="m = 0"
+              )
+
+# plotting m = 1
+rasterImage2( x = FT$fx
+              ,y = FT$fy
+              ,z = abs(FT$A[,,2])
+              ,zlim = c(0,0.5)
+              ,main="m = 1"
+)
+
+# plotting m = 2
+rasterImage2( x = FT$fx
+              ,y = FT$fy
+              ,z = abs(FT$A[,,3])
+              ,zlim = c(0,0.5)
+              ,main="m = 2"
+)
+rasterImage2( x = FT$fx
+              ,y = FT$fy
+              ,z = abs(FT$A[,,4])
+              ,zlim = c(0,0.5)
+              ,main="m = 3"
+)
+
+
 
 # calculating the derivative with the help of FFT
 ################################################
@@ -103,7 +155,7 @@ FT <- spec.fft(y = y, center = TRUE)
 # calculating the first derivative
 FT$A <- FT$A * 2 * pi * 1i * FT$fx
 # back transform
-dm <- spec.fft(FT, inverse = TRUE)
+dm <- spec.fft(FT)
 
 # plot
 par(mfrow=c(1,1))
@@ -115,7 +167,7 @@ plot(
   lty = 2,
   ylim = c(-4, 3)
 )
-# add some points to the line for the numerical result 
+# add some points to the line for the numerical result
 points(approx(x, Re(dm$y) / dx, n = 100))
 # analytical result
 curve(-3 * x ^ 2 + 3,
@@ -136,4 +188,4 @@ title(expression(d / dx ~ (-x ^ 3 + 3 * x)))
 \seealso{
 \link{plot.fft}
 }
-
+\concept{Fourier Transform}

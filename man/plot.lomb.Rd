@@ -7,9 +7,9 @@
 \method{plot}{lomb}(x, FAPcol = 1, FAPlwd = 1, FAPlty = "dashed",
   FAPlim = c(1, 0.001), FAPlab = "FAP", legend.pos = "topleft",
   legend.cex = 1, legend.on = T, legend.text = c("Spectrum",
-  "False Alarm Propability"), legend.lwd = NULL, legend.lty = NULL,
-  legend.col = NULL, xlab = "Frequency", ylab = "Amplitude", main = "",
-  ...)
+  "False Alarm Probability"), legend.lwd = NULL, legend.lty = NULL,
+  legend.col = NULL, xlab = "Frequency", ylab = "Normalized PSD",
+  main = "", ...)
 }
 \arguments{
 \item{x}{object of class \code{lomb}}
@@ -47,8 +47,9 @@
 \item{...}{further parameters to the plot function}
 }
 \description{
-This method plots a standard Lomb-Scargle periodogram, which contains the amplitude
-\code{A} and the false alarm probability \code{p}.
+This method plots a standard Lomb-Scargle periodogram, which contains the
+normalized power spectra \code{PSD} and the corresponding false alarm
+probability \code{p}. For more details refer to Zechmeister et al. (2009).
 }
 \details{
 The \code{plot.lomb} function is a wrapper function for R's standard scatter \code{plot}
@@ -59,7 +60,11 @@ To switch off certain properties, simply overwrite the parameter. For example
 # See spec.lomb
 
 }
+\references{
+M. Zechmeister and M. Kurster, "The generalised Lomb-Scargle periodogram.
+A new formalism for the floating-mean and Keplerian periodograms",
+Astronomy & Astrophysics, 496(2), pp. 577--584, 2009.
+}
 \seealso{
 \code{\link{spec.lomb}}
 }
-

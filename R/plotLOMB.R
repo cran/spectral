@@ -1,7 +1,8 @@
 #' plot method for Lomb-Scargle periodograms
 #'
-#' This method plots a standard Lomb-Scargle periodogram, which contains the amplitude
-#' \code{A} and the false alarm probability \code{p}.
+#' This method plots a standard Lomb-Scargle periodogram, which contains the
+#' normalized power spectra \code{PSD} and the corresponding false alarm
+#' probability \code{p}. For more details refer to Zechmeister et al. (2009).
 #'
 #' The \code{plot.lomb} function is a wrapper function for R's standard scatter \code{plot}
 #' To switch off certain properties, simply overwrite the parameter. For example
@@ -26,6 +27,11 @@
 #' @examples
 #' # See spec.lomb
 #'
+#' @references
+#' M. Zechmeister and M. Kurster, "The generalised Lomb-Scargle periodogram.
+#' A new formalism for the floating-mean and Keplerian periodograms",
+#' Astronomy & Astrophysics, 496(2), pp. 577--584, 2009.
+#'
 #' @seealso \code{\link{spec.lomb}}
 #' @inheritParams graphics::plot.default
 #' @inheritParams graphics::par
@@ -35,9 +41,9 @@ plot.lomb <-
   function(x
            ,FAPcol = 1,FAPlwd = 1,FAPlty = "dashed" ,FAPlim = c(1,1e-3),FAPlab = "FAP"
            ,legend.pos = "topleft",legend.cex = 1,legend.on = T
-           ,legend.text = c("Spectrum","False Alarm Propability")
+           ,legend.text = c("Spectrum","False Alarm Probability")
            ,legend.lwd = NULL,legend.lty = NULL,legend.col = NULL
-           ,xlab = "Frequency" ,ylab = "Amplitude",main="",...)
+           ,xlab = "Frequency" ,ylab = "Normalized PSD",main="",...)
   {
     ## checking common plot parameters and set defauls values
     params <- list(...)
@@ -51,8 +57,8 @@ plot.lomb <-
     else
       assign(n,params[[n]])
 
-    # set up defaults
     i <- which(x$f == 0)
+    # set up defaults
     if(!("xlim" %in% names(params)))
     {
       assign("xlim",NULL)
@@ -65,7 +71,7 @@ plot.lomb <-
       assign("xlim",params$xlim)
 
     if(!("ylim" %in% names(params)))
-      assign("ylim",c(0,max(x$A)))
+      assign("ylim",c(0,max(x$PSD)))
     else
       assign("ylim",params$ylim)
 
@@ -83,12 +89,13 @@ plot.lomb <-
       FAPlim <- c(1,min(x$p))
 
     # deleting x == 0 values in log-scale plot
-    if(log == "x")
+    if(log == "x" & length(which(x$f == 0)) > 0)
     {
       i <- which(x$f == 0)
       x$f <- x$f[-i]
       x$A <- x$A[-i]
       x$p <- x$p[-i]
+      x$PSD <- x$PSD[-i]
     }
 
     if(is.null(legend.lwd))
@@ -101,7 +108,7 @@ plot.lomb <-
 
     par(mar = par()$mar * c(1,1,1,0) + c(0, 0, 0, par()$mgp[1] + 1))
     args <- list(
-      x = x$f, y = x$A
+      x = x$f, y = x$PSD
       ,type = type
       ,log = log
       ,xlab = xlab ,ylab = ylab
@@ -112,7 +119,7 @@ plot.lomb <-
     args <- append(args,params[!(names(params) %in% names(args))])
     do.call(plot,args)
 
-    ### Plot the False Alarm Propability
+    ### Plot the False Alarm Probability
 
     op <- par(no.readonly = TRUE)
     par(new = T)
@@ -135,7 +142,7 @@ plot.lomb <-
     {
       args <- list(
         legend.pos
-        ,c("Spectrum","False Alarm Propability")
+        ,legend.text #,c("Spectrum","False Alarm Probability")
         ,lty = legend.lty
         ,lwd = legend.lwd
         ,col = legend.col

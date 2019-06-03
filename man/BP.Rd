@@ -28,4 +28,3 @@ The band pass is represented troughout a polynom in the form
 controlls the center frequency and \eqn{a} scales the required band width \code{BW}.
 outside the band width the result is forced to zero.
 }
-

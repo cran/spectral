@@ -12,9 +12,11 @@
 plot.fft<-function(x,...)
 {
   if(x$mode=="1D")
-    plot(x$fx,base::Mod(x$A),...)
+    plot(x$fx,base::Mod(x$PSD),...)
   if(x$mode == "2D")
     rasterImage::rasterImage2(x=x$fx,y=x$fy,z=base::Mod(x$A),...)
   if(x$mode == "waterfall")
-    rasterImage::rasterImage2(x=x$x,y=x$fx,z=base::Mod(x$A),...)
+    rasterImage::rasterImage2(x=x$x,y=x$fx,z=base::Mod(x$PSD)
+                              ,zlab = "PSD",zlim = c(0,1),z.adj = c(0,0.5)
+                              ,...)
 }

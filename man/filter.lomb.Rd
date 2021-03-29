@@ -4,8 +4,13 @@
 \alias{filter.lomb}
 \title{Filter and reconstruction of data analysed via spec.lomb}
 \usage{
-filter.lomb(l = stop("No Lomb-Data"), newx = NULL, threshold = 6,
-  filt = NULL, phase = "nextnb")
+filter.lomb(
+  l = stop("No Lomb-Data"),
+  newx = NULL,
+  threshold = 6,
+  filt = NULL,
+  phase = "nextnb"
+)
 }
 \arguments{
 \item{l}{lomb object}

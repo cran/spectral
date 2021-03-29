@@ -1,9 +1,9 @@
 #' Calculates the envelope of a band limited signal
 #'
 #' The envelope of an amplitude modulated signal can be calculated by using the
-#' Hilbert-transform \eqn{H(y)} of the signal or the analytic signal.
+#' Hilbert transform \eqn{H(y)} of the signal or the analytic signal.
 #'
-#' An amplitude  modulated function \eqn{y(x) = A(x) * cos(\omega * x)} can be
+#' An amplitude modulated function \eqn{y(x) = A(x) * cos(\omega * x)} can be
 #' demodulated as follows:
 #'
 #' \deqn{A(x)^2 = y(x)^2 + H(y(x))^2}

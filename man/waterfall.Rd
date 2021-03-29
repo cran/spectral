@@ -4,8 +4,13 @@
 \alias{waterfall}
 \title{Estimate the local frequencies}
 \usage{
-waterfall(y = stop("y value is missing"), x = NULL, nf = 3,
-  width = 10)
+waterfall(
+  y = stop("y value is missing"),
+  x = NULL,
+  nf = 3,
+  type = "b",
+  width = 7
+)
 }
 \arguments{
 \item{y}{numeric real valued data vector}
@@ -14,7 +19,9 @@ waterfall(y = stop("y value is missing"), x = NULL, nf = 3,
 
 \item{nf}{steepness of the bandpass filter, degree of the polynomial.}
 
-\item{width}{normalized (to \eqn{df}) maximum width of the bandpass.}
+\item{type}{type of weightening function: "poly", "sinc", "bi-cubic","gauss", can be abbreviated}
+
+\item{width}{normalized maximum "inverse" width of the bandpass \eqn{bw = fc/width}.}
 }
 \value{
 a special \code{fft}-object is returned. It has mode "waterfall" and
@@ -26,12 +33,11 @@ or spatial vector. One can then locate an event in time or space.
 }
 \details{
 Each frequency is evaluated by calculating the amplitude demodulation, which
-is equivalent to the envelope function of the bandpass filtered signal.
-The frequency of interest defines automatically the center frequency of the
-applied bandpass with the bandwidth \eqn{BW}:
-\deqn{BW = f0 / 4, BW < 4df -> BW = 4df, BW > width * df -> BW = width * df}
-The minimal frequency is \eqn{df} and \eqn{f0} denotes the center
-frequency of the bandpass.
+is equivalent to the envelope function of the band pass filtered signal.
+The frequency of interest defines automatically the center frequency \eqn{fc} of the
+applied band pass with the bandwidth \eqn{BW}:
+\deqn{BW = fc / width, BW < width -> BW = width, BW > width -> BW = fc / width}
+The frequency is normalized so the minimal frequency is \eqn{1}.
 With increasing frequency the bandwidth becomes wider, which lead to a variable
 resolution in space and frequency. This is comparable to the wavelet
 (or Gabor) transform,
@@ -43,15 +49,33 @@ This means for a signal with steady
 increasing frequency the \code{waterfall} function will produce a diagonally
 stripe. See the examples below.
 }
+\section{Missing values}{
+
+
+Given a regualar grid \eqn{x_i = \delta x \cdot i} there might be missing values
+marked with \code{NA}, which are treated by the function as 0's.
+This "zero-padding" leads to a loss of signal energy being
+roughly proportional to the number of missing values.
+The correction factor is then \eqn{(1 - Nna/N)} as long as \eqn{Nna / N < 0.2}.
+As long as the locations of missing values are randomly
+distributed the implemented procedure workes quite robust. If, in any case,
+the distribution becomes correlated the proposed correction is faulty and
+projects the wrong energies.
+
+The amplitudes and PSD values are compensated to show up an estimate of the
+"correct" value. Therefore this method is experimental
+}
+
 \examples{
-## noisy signal with amplitude modulation
-x <- seq(0,1, length.out=1000)
+#### noisy signal with amplitude modulation ####
+x <- seq(0,3, length.out = 1000)
 # original data
 # extended example from envelope function
-y <- 2*(abs(x-0.5))*sin(10*2*pi*x) + ifelse(x > 0.5,sin(10*(1+2*(x - 0.5))*2*pi*x),0)
+y <- 1*(abs(x-1.5))*sin(10*2*pi*x) + ifelse(x > 1.5,sin(15*(1+0.25*(x - 1.5))*2*pi*x),0)
 ye <- base::Re(envelope(y))
 
 par(mfrow=c(2,1),mar=c(1,3.5,3,3),mgp=c(2.5,1,0))
+
 # plot results
 plot(x,y,type="l",lwd=1,col="darkgrey",lty=2,ylab="y",main="Original Data",xaxt="n",xlab="")
 lines(x,ye)
@@ -59,25 +83,70 @@ legend("bottomright",c("modulated","envelope"),col=c("grey","black"),lty=c(2,1))
 
 par(mar=c(3.5,3.5,2,0))
 wf <- waterfall(y,x,nf = 3)
+# rasterImage2(x = wf$x, y = wf$fx, z = wf$A
+#              ,ylim = c(0,60))
+
 plot(wf,ylim=c(0,40),main="Waterfall")
 
 
-## uncertainty principle
+#### uncertainty principle ####
 #
-# take a look at the side effects at [0,30] and [1,0]
+# take a look at the side effects
+# at [0,30] and [1,0]
 #
-# with a large steepness e.g. n=50 you will gain
+# With a large steepness e.g. n = 50 you will gain
 # artefacts.
 #
-x <- seq(0,1, length.out=500)
+# if frequency is not stationary
+# PSD becomes > 1 depending on the type of band filter.
+#
+###############################
+x <- seq(0,1, length.out=1500)
 y <- sin(100*x*x)
+
+FT <- spec.fft(x = x, y = y)
+wf <- waterfall(y,x)
 
 par(mfrow=c(2,1),mar=c(1,3.5,3,3),mgp=c(2.5,1,0))
 # plot results
 plot(x,y,type="l",lwd=1,col="darkgrey",lty=2,ylab="y",main="Original Data",xaxt="n",xlab="")
 
 par(mar=c(3.5,3.5,2,0))
-wf <- waterfall(y,x)
-rasterImage2(x = wf$x, y= wf$fx,z=wf$A,ylim=c(0,40),main="Waterfall")
+plot(wf
+             ,ylim=c(0,40),main="Waterfall"
+             )
+abline(h = 25, lty = 3, lwd = 3, col = "grey")
+range(wf$PSD,na.rm = TRUE)
+range(wf$A)
 
+###### effect of missing values #####
+#
+# 10\% random missing values cause a
+# distortion and a miss scaling of
+# the PSD value, which becomes >1 now.
+# This depends on the type of band pass
+# filter selected.
+#
+#####################################
+x <- seq(0,5, length.out=500)
+y <- sin(2*pi * 15 * x + 2*1*cos(2*pi*0.5*x))
+
+# delete 10\% of the data
+y[sample(length(y),size = 50)] <- NA
+
+wf <- waterfall(y,x,type = "b")
+
+par(mfrow=c(2,1),mar=c(1,3.5,3,3),mgp=c(2.5,1,0))
+# plot results
+plot(x,y,type="l",lwd=1,col="darkgrey",lty=2,ylab="y",main="Original Data",xaxt="n",xlab="")
+
+par(mar=c(3.5,3.5,2,0))
+plot(wf
+     ,ylim=c(10,20),main="Waterfall"
+)
+abline(h = 25, lty = 3, lwd = 3, col = "grey")
+
+# check the PSD range
+range(wf$PSD)
+range(wf$A)
 }

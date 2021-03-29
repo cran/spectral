@@ -7,7 +7,7 @@
 #' Since the given time series does not need to be evenly sampled, the data
 #' mainly consists of data pairs \code{x1, x2, x3, ...} (sampling points) and (one)
 #' corresponding value \code{y}, which stores the realisation/measurement data.
-#' As can be seen from the data definition above multivariate (n-dimensional)
+#' As can be seen from the data definition above, multivariate (n-dimensional)
 #' input data is allowed and properly processed.
 #'
 #' Two different methods are implemented: the standard Lomb-Scargle method with
@@ -24,7 +24,7 @@
 #'
 #' Both methods can be supplied by an artifical dense frequency vector \code{f}.
 #' In conjunction with the resulting phase information the user might be able to
-#' build a "Fourier" spectrum to reconstruct or interpolate the timeseries in equally
+#' build a "Fourier"-like spectrum to reconstruct or interpolate the timeseries in equally
 #' spaced sampling. Remind the band limitation which must be fulfilled for this.
 #'
 #' \describe{
@@ -34,19 +34,33 @@
 #'  vector, the \code{ofac} parameter causes the function to estimate
 #'  \deqn{nf = ofac*length(x)/2} equidistant frequencies.}
 #'  \item{\code{p}-value}{The \code{p}-value (aka false alarm probability FAP)
-#'  gives the probability, wheater the estimated amplitude is NOT significant.
+#'  gives the probability, wheter the estimated amplitude is NOT significant.
 #'  However, if \code{p} tends to zero the
 #'  amplidutde is significant. The user must decide which maximum value is acceptable,
 #'  until an amplitude is not valid.}
 #' }
 #'
-#' If missing values \code{NA} or \code{NaN} appear in any column, the whole row
+#' If missing values \code{NA} or \code{NaN} appear in any column, the corresponding row
 #' is excluded from calculation.
+#'
+#' @section Speed Up:
 #'
 #' In general the function calculates everything in a vectorized manner, which
 #' speeds up the procedure. If the memory requirement is more than \code{maxMem},
-#' the calculation is split into chunks which fit in the memory size.
+#' the calculation is split into chunks which fit in the memory (cache). Depending on the
+#' problem size (number of frequencies and data size) a tuning of this value
+#' enhances speed.
 #'
+#' Please consider to replpace the BLAS library by a multithreaded version. For example
+#' \url{https://prs.ism.ac.jp/~nakama/SurviveGotoBLAS2/binary/windows/x64/} is hosting
+#' some Windows RBlas.dll files. Refer to \url{https://mattstats.wordpress.com/2016/02/07/r-with-gotoblas-on-windows-10/}
+#' for further information.
+#'
+#' The parameter \code{cl} controls a possible cluster, which can be invoked. It takes an
+#' integer number of workers (i. e. \code{cl = 4}), a list with node names \code{c("localhost",...)}
+#' or an object of class \code{'cluster'} or similar. The first two options cause the
+#' function to create the cluster internally. This takes time due to the initialization.
+#' The faster way is to provide an already initialized cluster to the function.
 #'
 #'
 #' @param f optional frequency vector / data frame. If not supplied \code{f} is calculated.
@@ -59,9 +73,11 @@
 #' \code{"generalized"} calculates the generalized Lomb-Scargle periodogram including
 #' floating average and weights.
 #' @param maxMem sets the amount of memory (in MB) to utilize, as a rough approximate.
+#' @param cl if \code{numeric}, it defines the number of workers to use, or provides a cluster
+#'           definition of class \code{cluster} or \code{SocketCluster} from \code{parallel} package
 #'
 #' @return The \code{spec.lomb} function returns an object of the class \code{lomb},
-#' which is a \code{list} containg the following parameters:
+#' which is a \code{list} containg the following information:
 #' \describe{
 #'  \item{\code{A}}{A vector with amplitude spectrum}
 #'  \item{\code{f}}{corresponding frequency vector}
@@ -69,8 +85,9 @@
 #'  \item{\code{PSD}}{power spectral density normalized to the sample variance}
 #'  \item{\code{floatAvg}}{floating average value only in case of
 #'                          \code{mode == "generalized"}}
+#'  \item{\code{w}}{if, \code{mode == "generalized"} contains the weighting vector}
 #'  \item{\code{x,y}}{original data}
-#'  \item{p}{p-value as statistical measure}
+#'  \item{p}{p-value False Alarm Probability}
 #' }
 #'
 #' @references
@@ -92,9 +109,15 @@
 #' @seealso \code{\link{filter.lomb}}
 #' @export
 #' @import lattice
+#' @import RhpcBLASctl
+#' @import parallel
+#' @import pbapply
 spec.lomb <- function(x = NULL, y=stop("Missing y-Value"),f = NULL, ofac = 1
-                      ,w = NULL, mode = "normal", maxMem = 100)
+                      ,w = NULL, mode = "normal"
+                      ,maxMem = 8,cl = NULL
+                      )
 {
+
   f_not_defined <- is.null(f)
   fzero <- F
 
@@ -138,7 +161,7 @@ spec.lomb <- function(x = NULL, y=stop("Missing y-Value"),f = NULL, ofac = 1
   y_org <- y
 
   # delete "missing values"
-  c <- apply(dat,1,function(x) !any(is.na(x)))
+  c <- apply(dat,1,function(x) !any(is.na(x) )) # check by row
   w <- w[c]
   dat <- dat[c , ]
 
@@ -147,11 +170,18 @@ spec.lomb <- function(x = NULL, y=stop("Missing y-Value"),f = NULL, ofac = 1
 
   mean_val <- mean(dat$val)
   var_val  <- var(dat[,dim(dat)[2]])
+
   nt <- dim(dat)[1]
 
   ### calculating frequencies
   if(!is.null(f))
   {
+
+    if( !( (is.vector(f) & is.vector(x) & is.vector(y)) |
+           (is.data.frame(f) & is.data.frame(y)) )
+      )
+      stop("frequency vector does not fit to data dimensions")
+
     if( !is.data.frame(f) & length(f) == dim(dat)[2]-1 )
     {
       dim(f) <- c(1,length(f))
@@ -160,10 +190,6 @@ spec.lomb <- function(x = NULL, y=stop("Missing y-Value"),f = NULL, ofac = 1
       warning("coerced frequency to 1xN data.frame")
     }
 
-    if( !( (is.vector(f) & is.vector(x) & is.vector(y)) |
-           (is.data.frame(f) & is.data.frame(y)) )
-      )
-      stop("frequency vector does not fit to data dimensions")
 
     if(ifelse(is.vector(f), length(f),dim(f)[1]) == (dim(dat)[2]-1))
     {
@@ -194,21 +220,26 @@ spec.lomb <- function(x = NULL, y=stop("Missing y-Value"),f = NULL, ofac = 1
   }
 
   # Lomb rechnen
+  env <- environment()
   f <- as.matrix(f)
   dat <- as.matrix(dat)
 
   res <- NULL
 
   # estimate the memory usage and divide the analysis in appropriate fractions
-  memSize <- 3 * max(dim(f)) * max(dim(dat)) * 8 / 1024^2
-  nFrac <- ceiling(memSize / maxMem)
-  fInd <- split(1:dim(f)[1], rep(1:nFrac, each = ceiling(dim(f)[1]/nFrac)
+
+  nFrac <- ceiling(maxMem * 1024^2 / (4 * 8 * dim(dat)[1]))
+  fInd <- split(1:dim(f)[1], rep(1:ceiling(dim(f)[1]/nFrac)
+                                 ,each = nFrac
                                  ,length.out = dim(f)[1])
                 )
 
+  Y <- NULL
+  hYY <- NULL
+
   if(mode == "generalized")
   {
-    Y <- sum(w*dat[,dim(dat)[2]])
+      Y <- sum(w*dat[,dim(dat)[2]])
     hYY <- sum(w*dat[,dim(dat)[2]]^2)
   }
 
@@ -217,7 +248,10 @@ spec.lomb <- function(x = NULL, y=stop("Missing y-Value"),f = NULL, ofac = 1
     dat[,dim(dat)[2]] <- dat[,dim(dat)[2]] - mean_val
   }
 
-  res <- lapply(fInd,function(ind)
+  # making up progressbar
+  pboptions(style = 3, char = "=")
+
+  doLomb <- function(ind) # variables are present in the global environment
   {
     if(mode == "generalized")
     {
@@ -228,7 +262,36 @@ spec.lomb <- function(x = NULL, y=stop("Missing y-Value"),f = NULL, ofac = 1
     {
       return( lmb(f[ind,],dat = dat,var_val = var_val) )
     }
-  })
+
+  }
+
+  # if cluster or number of nodes is detected
+  # build up cluster
+  if(!is.null(cl))
+  {
+    if(is.numeric(cl) | is.character(cl)) # number of cores is given
+    {
+      on.exit(stopCluster(cl)) # stop own cluster if function ends
+      cl <- makeCluster(cl)
+    }
+    if(length(grep("cluster",class(cl))) == 0)
+    {
+      stop("Incorrect cluster file")
+    }
+
+    # correct BLAS number of threads
+    nthr <- get_num_procs() %/% length(cl)
+    if(nthr == 0L)
+      nthr <- 1
+    blas_set_num_threads(nthr)
+
+    clusterExport(cl,varlist = c("lmb","gLmb","dat","w","Y","hYY","var_val","mode","f")
+                  ,envir = env)
+
+
+  }
+
+  res <- pblapply(fInd,doLomb,cl = cl)
 
   res <- do.call(rbind,res)
   res <- cbind(f,res)
@@ -244,9 +307,9 @@ spec.lomb <- function(x = NULL, y=stop("Missing y-Value"),f = NULL, ofac = 1
   {
     # correct f == 0 value
     res$A[which(rowSums(f) == 0)] <- mean_val
-    res$phi[which(rowSums(f) == 0)] <- NA
+    res$phi[which(rowSums(f) == 0)] <- 0
     res$PSD[which(rowSums(f) == 0)] <- 0
-    res$p[which(rowSums(f) == 0)] <- NA
+    res$p[which(rowSums(f) == 0)] <- 0
   }
 
   # False alarm Probability
@@ -255,7 +318,7 @@ spec.lomb <- function(x = NULL, y=stop("Missing y-Value"),f = NULL, ofac = 1
   #
   # Prob(p > p0) = (1 - p0)^((N-3)/2)
   #
-  Prob <- (1 - res$PSD)^((nt-3)/2)
+  Prob <- (1 - res$PSD)^((nt - 3) / 2)
 
   # Degrees of freedom
   # after Press (1989,1992)
@@ -272,6 +335,7 @@ spec.lomb <- function(x = NULL, y=stop("Missing y-Value"),f = NULL, ofac = 1
 
 
   res <- as.list(res)
+  res$w <- w
   res$x <- x_org
   res$y <- y_org
 
@@ -298,7 +362,7 @@ lmb <- function(f, dat, var_val)
   #
   #########################
 
-  val <- dat[, dim(dat)[2]]
+  # val <- dat[, dim(dat)[2]]
   ### Calculating phase (e.g. omega * time) ###
 
   # if f is a single vector
@@ -337,9 +401,12 @@ lmb <- function(f, dat, var_val)
   l <- sqrt(R ^ 2 + I ^ 2)
   phi  <- -tau - atan2((I / l), (R / l))
   A  <- sqrt((R / C) ^ 2 + (I / S) ^ 2)
+  # A  <- sqrt(2/dim(dat)[1]) * sqrt(R^2 / C  + I^2 / S)
 
   # normalized Periodogram (Hocke 1998, Press 1992 and Zechmeister 2009)
-  PSD <- dim(dat)[1]/ (4*var_val) * A^2 * 2 / (dim(dat)[1] - 1)
+  # Pn * pn = p(w)
+  PSD <- dim(dat)[1] / (4 * var_val) * A^2 * 2 / (dim(dat)[1] - 1)
+
 
   return(data.frame(A = A, phi = phi, PSD = PSD))
 }

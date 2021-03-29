@@ -11,63 +11,35 @@ x <- seq(0,1,by = dx)
 x <- sort(x)
 n <- length(x)
 
-w <- 2*pi*20.25
-v <- 0.1
-windows()
+w <- 2*pi*20.25 # frequency
+v <- 0.1        # noise standard deviation
 
 res <- NULL
 
-e <- 4/5*qnorm(1-1e-3) * v * 1/(sqrt(length(x))) # *(1-(w*diff(range(x)))^2/(6*length(x))))
+e <- 4/pi*qnorm(1 - 1e-2) * v * sqrt(2/length(x))
 
+set.seed(Sys.time())
 
-for(i in 1:1e4)
+for(i in 1:1e5)
 {
   n <- rnorm(length(x),0,v)
-  p <- rnorm(1)
-  y <- cos(w*x+p) + n
-  plot(x,y)
-  curve(cos(w*x+p),add=T,n = length(x))
-
-  SOT <- (w)*x
-
-  # tau <- atan2(sum(sin(2 * SOT)), sum(cos(2 * SOT))) / 2
-
-  # 0.5*atan2(sum(sin(2*w*x)),sum(cos(2*w*x)))
-  wt <- c(1,min(diff(x))/diff(x))
-
-  ### für gleichmäßig abgetastete Punkte ist das OK
-  tau <- (max(w*x) - min(w*x))/2
-  tau <- tau - (tau %/% (pi/2) ) * pi/2
-
-  ###
-  # tau <- atan2((sin(w*max(x)) - sin(w*min(x)))/n, (cos(w*max(x)) - cos(w*min(x)))/n)
-
-  arg <- SOT - tau
+  p <- rnorm(1) # random phase
+  y <- cos(w*x + p) + n
 
 
-  cs <- cos(arg)
-  ss <- sin(arg)
-
-  R <- sum(y * cs)
-  I <- sum(y * ss)
-
-  C <- sum(cs ^ 2)
-  S <- sum(ss ^ 2)
-
-  A <- sqrt((R/C)^2 + (I/S)^2)
-
-  dA <- abs(1-A)
+  l <- spec.lomb(x = x, y = y, f = rep(w / (2*pi),2))
+  dA <- 1 - l$A[1]
 
   res <- rbind(res,c(e=e,dA=dA))
-  print(i)
+  cat(i,"\r")
 
 }
 res <- as.data.frame(res)
 res$e <- e
-res$cond <- e*5/4<res$dA
+res$cond <- e < abs(res$dA)
 
 plot(res$dA,ylim=range(res$dA)*2,col=res$cond+1)
-abline(h = 5/4*e,lty = 2)
+abline(h = e*c(-1,1),lty = 2)
 
 print(sum(res$cond))
 

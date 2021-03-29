@@ -1,0 +1,47 @@
+spectral 2.0
+==============
+
+* add summary() and print() functions
+* add deconvolve() function to perform analytically deconvolution
+* add standardized PSD and false alarm probability to spec.fft-function
+* spec.fft handles NA-values by zero padding and simple energy recovery.
+* enhance calculation speed by multithreaded BLAS (must be replaced by user)
+* add 1D FFT interpolation function
+* read out cache size for memory usage in spec.lomb
+* bug fix memory calculation in spec.lomb()
+* bug fix single frequency in spec.lomb()
+* optional cluster (hpc) calculation in spec.lomb()
+* adding a progressbar to spec.lomb()
+* waterfall() calculates PSD as well
+* changed variable band width in waterfall()
+* waterfall also ignores NA values and corrects
+* adding progress bar to waterfall()
+* extending band pass function BP() by sinc, bi-cubic and gauss kernels
+* modified all dependend functions which use band pass BP()
+* add Hanning window function
+
+spectral 1.3.1
+====================
+
+* spec.lomb: phase value at f = 0 -> 0
+
+
+spectral 1.3
+====================
+
+* improved documentation
+* FFT as well as any LOMB version work with *multivariate* input
+* Added generalized Lomb-Scargle method
+* improved speed of both the normal Lomb-Scargle Method and generalized Lomb
+* power spectral density is now normalized to sample variance
+* limit memory usage
+
+
+spectral 1.0
+====================
+
+* development of all functions
+* development of concepts
+
+
+

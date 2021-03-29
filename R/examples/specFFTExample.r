@@ -14,12 +14,13 @@ plot(
   xlim = c(-30, 30),
   main = "Spectrum"
 )
+summary(FT)
 
 # 2D example with a propagating wave
 ####################################
 
-x <- seq(0, 1, length.out = 1e2)
-y <- seq(0, 1, length.out = 1e2)
+x <- seq(0, 1, length.out = 50)
+y <- seq(0, 1, length.out = 50)
 
 # calculate the data
 m <- matrix(0, length(x), length(y))
@@ -53,13 +54,14 @@ plot(
   ,
   z.cex = 1
 )
+summary(FT)
 
 # 3D example with a propagating wave
 ####################################
 
 # sampling vector
-x <- list(x = seq(0,2,by = 0.05)[-1]
-          ,y = seq(0,1, by = 0.05)[-1]
+x <- list(x = seq(0,2,by = 0.1)[-1]
+          ,y = seq(0,1, by = 0.1)[-1]
           ,z = seq(0,1, by = 0.1)[-1]
 )
 
@@ -69,7 +71,7 @@ m <- array(data = 0,dim = sapply(x, length))
 for(i in 1:length(x$x))
   for(j in 1:length(x$y))
     for(k in 1:length(x$z))
-      m[i,j,k] <- cos(2*pi*(5*x$x[i] + 4*x$y[j] + 2*x$z[k])) + sin(2*pi*(2*x$x[i]))^2
+      m[i,j,k] <- cos(2*pi*(1*x$x[i] + 2*x$y[j] + 2*x$z[k])) + sin(2*pi*(1.5*x$x[i]))^2
 
 FT <- spec.fft(x = x, y = m, center = c(TRUE,TRUE,FALSE))
 
@@ -104,6 +106,7 @@ rasterImage2( x = FT$fx
               ,main="m = 3"
 )
 
+summary(FT)
 
 
 # calculating the derivative with the help of FFT

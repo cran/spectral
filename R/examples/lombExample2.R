@@ -18,7 +18,7 @@ y <- fy(x) + rnorm(length(x),sd = 0.05)
 
 f <- seq(0,500,by = 1)
 
-lmb <- spec.lomb(x = x,y = y, f = f)
+lmb <- spec.lomb(x = x,y = y, f = f,mode = "generalized")
 ft <- spec.fft(x = x, y = y)
 
 Aft <- lmb$A * (cos(2*pi*lmb$f + lmb$phi) + 1i * sin(2*pi*lmb$f + lmb$phi))

@@ -1,12 +1,33 @@
 #' 1D/2D/nD (multivariate) spectrum of the Fourier transform
 #'
-#' This function calculates the Fourier spectrum of a given data object. The
-#' dimension of the array can be of arbitary size e.g. 3D or 4D.
-#' The goal is to return a user friendly object, which contains as much frequency
-#' vectors as ordinates of the array are present. \code{spec.fft} provides the
-#' ability to center the spectrum along multiple axis. The output is already
+#' This function calculates the Fourier spectrum and power spectral density
+#' of a given data object. The dimension of the array can be of arbitary size
+#' e. g. 3D or 4D.
+#'
+#' The function returns an user friendly object, which contains as much frequency
+#' vectors as ordinates of the array. \code{spec.fft} provides the
+#' ability to center the spectrum along multiple axis. The amplitude output is already
 #' normalized to the sample count and the frequencies are given in terms of
 #' \eqn{1/\Delta x}-units.
+#'
+#' @section Missing Values:
+#'
+#' Given a regualar grid \eqn{x_i = \delta x \cdot i} there might be missing values
+#' marked with \code{NA}, which are treated by the function as 0's.
+#' This "zero-padding" leads to a loss of signal energy being
+#' roughly proportional to the number of missing values.
+#' The correction factor is then \eqn{(1 - Nna/N)} as long as \eqn{Nna / N < 0.2}.
+#' If the locations of missing values are randomly
+#' distributed the implemented procedure workes quite robust. If correalted
+#' gaps are present, the proposed correction is faulty and
+#' scales wrong. This is because a convolution of the incomplete
+#' sampling vector with the the signal takes place. An aliasing effect
+#' takes place distorting the spectral content.
+#'
+#' To be compatible with the underlying Fourier transform, the amplitudes
+#' are not affected by this rescaling.
+#' Only the power spectral density (PSD) is corrected in terms of the energy
+#' content, which is experimental for the moment.
 #'
 #' @param y 1D data vector, y coordinate of a 2D matrix, nD (even 2D) array
 #'          or object of class \code{fft}
@@ -15,7 +36,9 @@
 #' @param center logical vector, indicating which axis to center in frequency space
 #'
 #' @return An object of the type \code{fft} is returned. It contains the
-#' spectrum, with "reasonable" frequency vectors along each axis.
+#' spectrum \code{A}, with "reasonable" frequency vectors along each ordinate. \code{psd} represents
+#' the standardized power spectral density, [0,1]. The false alarm probability (FAP)
+#' \code{p} is given similar to the Lomb-Scargle method, see \link{spec.lomb}.
 #'
 #' @seealso \link{plot.fft}
 #' @example R/examples/specFFTExample.r
@@ -189,16 +212,35 @@ spec.fft <- function(y = NULL, # vector or nD-array
   }
 
   ### Doing FFT ###
+  N <- length(y)
 
-  Y <- fft(y, inverse = inverse)
+  tmp <- y
+  tmp[is.na(tmp)] <- 0
+
+  Y <- fft(tmp, inverse = inverse)
 
   ### correct inverse or non inverse mode ###
   if(!inverse)
   {
+    Nna <- sum(is.na(y))
+    sdy <- sd(y,na.rm=T)
+
     res <- f
-    res$A <- Y/length(Y)
+    res$A <- Y / N
+    ### add standardized PSD ###
+    res$PSD <- N / (N - 1) / ( 2 * sdy^2 ) * ( 2 * abs(res$A) / (1 - Nna / N) )^2
+
+    ### add false Alarm Probability ###
+    M <- -6.362 + 1.193 * N + 0.00098 * N^2
+    tmp <- (1 - res$PSD)^((N - 3) / 2)
+    res$p <- M * tmp
+    res$p[is.na(res$p)] <- 1
+    if(any(res$p > 0.001))
+      res$p[res$p > 0.001] <- 1 - (1 - tmp[res$p > 0.001])^M
+
     res$mode <- mode
     res$center <- center
+
     class(res) <- "fft"
   }
   if(inverse)

@@ -4,8 +4,16 @@
 \alias{spec.lomb}
 \title{Lomb-Scargle Periodigram}
 \usage{
-spec.lomb(x = NULL, y = stop("Missing y-Value"), f = NULL,
-  ofac = 1, w = NULL, mode = "normal", maxMem = 100)
+spec.lomb(
+  x = NULL,
+  y = stop("Missing y-Value"),
+  f = NULL,
+  ofac = 1,
+  w = NULL,
+  mode = "normal",
+  maxMem = 8,
+  cl = NULL
+)
 }
 \arguments{
 \item{x}{sampling vector or data frame \code{data.frame(x1, x2, x3, ...)}}
@@ -24,10 +32,13 @@ oversampling.}
 floating average and weights.}
 
 \item{maxMem}{sets the amount of memory (in MB) to utilize, as a rough approximate.}
+
+\item{cl}{if \code{numeric}, it defines the number of workers to use, or provides a cluster
+definition of class \code{cluster} or \code{SocketCluster} from \code{parallel} package}
 }
 \value{
 The \code{spec.lomb} function returns an object of the class \code{lomb},
-which is a \code{list} containg the following parameters:
+which is a \code{list} containg the following information:
 \describe{
  \item{\code{A}}{A vector with amplitude spectrum}
  \item{\code{f}}{corresponding frequency vector}
@@ -35,8 +46,9 @@ which is a \code{list} containg the following parameters:
  \item{\code{PSD}}{power spectral density normalized to the sample variance}
  \item{\code{floatAvg}}{floating average value only in case of
                          \code{mode == "generalized"}}
+ \item{\code{w}}{if, \code{mode == "generalized"} contains the weighting vector}
  \item{\code{x,y}}{original data}
- \item{p}{p-value as statistical measure}
+ \item{p}{p-value False Alarm Probability}
 }
 }
 \description{
@@ -48,7 +60,7 @@ amplitude and phase at a given frequency. This function takes also multivariate
 Since the given time series does not need to be evenly sampled, the data
 mainly consists of data pairs \code{x1, x2, x3, ...} (sampling points) and (one)
 corresponding value \code{y}, which stores the realisation/measurement data.
-As can be seen from the data definition above multivariate (n-dimensional)
+As can be seen from the data definition above, multivariate (n-dimensional)
 input data is allowed and properly processed.
 
 Two different methods are implemented: the standard Lomb-Scargle method with
@@ -65,7 +77,7 @@ as well.
 
 Both methods can be supplied by an artifical dense frequency vector \code{f}.
 In conjunction with the resulting phase information the user might be able to
-build a "Fourier" spectrum to reconstruct or interpolate the timeseries in equally
+build a "Fourier"-like spectrum to reconstruct or interpolate the timeseries in equally
 spaced sampling. Remind the band limitation which must be fulfilled for this.
 
 \describe{
@@ -75,23 +87,40 @@ spaced sampling. Remind the band limitation which must be fulfilled for this.
  vector, the \code{ofac} parameter causes the function to estimate
  \deqn{nf = ofac*length(x)/2} equidistant frequencies.}
  \item{\code{p}-value}{The \code{p}-value (aka false alarm probability FAP)
- gives the probability, wheater the estimated amplitude is NOT significant.
+ gives the probability, wheter the estimated amplitude is NOT significant.
  However, if \code{p} tends to zero the
  amplidutde is significant. The user must decide which maximum value is acceptable,
  until an amplitude is not valid.}
 }
 
-If missing values \code{NA} or \code{NaN} appear in any column, the whole row
+If missing values \code{NA} or \code{NaN} appear in any column, the corresponding row
 is excluded from calculation.
+}
+\section{Speed Up}{
+
 
 In general the function calculates everything in a vectorized manner, which
 speeds up the procedure. If the memory requirement is more than \code{maxMem},
-the calculation is split into chunks which fit in the memory size.
+the calculation is split into chunks which fit in the memory (cache). Depending on the
+problem size (number of frequencies and data size) a tuning of this value
+enhances speed.
+
+Please consider to replpace the BLAS library by a multithreaded version. For example
+\url{https://prs.ism.ac.jp/~nakama/SurviveGotoBLAS2/binary/windows/x64/} is hosting
+some Windows RBlas.dll files. Refer to \url{https://mattstats.wordpress.com/2016/02/07/r-with-gotoblas-on-windows-10/}
+for further information.
+
+The parameter \code{cl} controls a possible cluster, which can be invoked. It takes an
+integer number of workers (i. e. \code{cl = 4}), a list with node names \code{c("localhost",...)}
+or an object of class \code{'cluster'} or similar. The first two options cause the
+function to create the cluster internally. This takes time due to the initialization.
+The faster way is to provide an already initialized cluster to the function.
 }
+
 \examples{
 # create two sin-functions
 x_orig <- seq(0,1,by=1e-2)
-y_orig <- sin(10*2*pi*x_orig) + 0.1*sin(2*2*pi*x_orig)
+y_orig <- 2*sin(10*2*pi*x_orig) + 1.5*sin(2*2*pi*x_orig)
 
 # make a 10\% gap
 i <- round(length(x_orig)*0.2) : round(length(x_orig)*0.3)
@@ -117,6 +146,7 @@ legend("bottomleft",c("gapped","10Hz component"),lty=c(1,2))
 
 plot(l,main = "Spectrum")
 
+summary(l)
 
 ### Multivariate -- 3D Expample ###
 require(lattice)
@@ -125,15 +155,15 @@ fy <- 5
 fz <- 2
 
 # creating frequency space
-f <- expand.grid( fx = seq(-10,10,by = 0.25)
-                  ,fy = seq(-10,10,by = 0.25)
+f <- expand.grid( fx = seq(-10,10,by = 0.5)
+                  ,fy = seq(-10,10,by = 0.5)
                   ,fz = 0:3
 )
 
 # creating spatial space
-pts <- expand.grid( x = seq(0,1,by = 0.025)
-                   ,y = seq(0,1,by = 0.025)
-                   ,z = seq(0,1,by = 0.025)
+pts <- expand.grid( x = seq(0,1,by = 0.02)
+                   ,y = seq(0,1,by = 0.02)
+                   ,z = seq(0,1,by = 0.02)
 )
 
 # gapping 30\%
@@ -145,7 +175,12 @@ pts$val <- cos(2*pi*(  fx*pts$x
                      + fy*pts$y
                      + fz*pts$z
                     ) + pi/4
-              )
+              ) +
+  0.5 * cos(2*pi*(  - 0.5 * fx*pts$x
+              + 0.5*fy*pts$y
+              + 1 * pts$z
+  ) + pi/4
+  )
 
 # display with lattice
 levelplot(val~x+y,pts,subset = z == 0,main = "with z = 0")
@@ -153,9 +188,9 @@ levelplot(val~x+y,pts,subset = z == 0,main = "with z = 0")
 # calculating lomb takes a while
 # or we sample only a few points
 # which enlarges the noise but accelerates the calculation
-l <- spec.lomb(y = pts[sample(1:dim(pts)[1],5e2),]
+l <- spec.lomb(y = pts[sample(1:dim(pts)[1],2e3),]
                ,f = f
-               ,mode = "generalized"
+               # ,mode = "generalized"
                )
 
 # name the stripes
@@ -165,6 +200,11 @@ l$fz_lev <- factor(x = paste("fz =",l$fz)
 # display output
 levelplot(PSD~fx+fy|fz_lev,l)
 
+# the result is an oversampled spectrum of a non equidistant
+# sampled function. We recognize a 3D analysis in all provided
+# spatial directions x, y, z.
+
+summary(l)
 }
 \references{
 A. Mathias, F. Grond, R. Guardans, D. Seese, M. Canela, H. H. Diebner,

@@ -13,37 +13,40 @@ analyticFunction(x)
 Complex valued analytic function
 }
 \description{
-In general a causal real valued signal in time has negative frequencies,
-when a Fourier transform is applied. To overcome this, a complex complement
-can be calculated to compensate the negative frequency spectrum. The result is
-called analytic signal or analytic function, which provides a one sided spectrum.
+In general a causal real valued signal in time has negative
+frequencies, when a Fourier transform is applied. To overcome this,
+a complex complement can be calculated to compensate the negative
+frequency spectrum. The result is called analytic signal or analytic
+function, which provides a one sided spectrum.
 }
 \details{
-An analytic function \eqn{xa} is composed of the real valued signal representation
-\eqn{y} and its Hilber transform \eqn{H(y)} as the complex complement
-\deqn{xa(t) = x(t)+i H(x(t)).}
-In consequence, the analytic function has a one sided spectrum, which is more
-natural. Calculating the discrete Fourier transform of such a signal will give a
-complex vector, which is only non zero until the half of the length. Every component
-higher than the half of the sampling frequency is zero. Still, the analytic signal
-and its spectrum are a unique representation of the original signal \eqn{x(t)}.
-The new properties enables us to do certain filtering and
-calculations more easily in the spectral space compared to the standard FFT
-approach. Some examples are:
+An analytic function \eqn{xa} is composed of the real valued signal
+representation \eqn{y} and its Hilber transform \eqn{H(y)} as the
+complex complement \deqn{xa(t) = x(t)+i H(x(t))}.
+In consequence, the analytic function has a one sided spectrum,
+which is more natural. Calculating the discrete Fourier transform
+of such a signal will give a complex vector, which is only non zero
+until the half of the length. Every component higher than the half
+of the sampling frequency is zero. Still, the analytic signal
+and its spectrum are a unique representation of the original signal
+\eqn{x(t)}. The new properties enables us to do certain filtering
+and calculations more efficient in the spectral space compared to the
+standard FFT approach. Some examples are:
 
 \describe{
- \item{Filtering}{because the spectrum is one sided, the user must only modifiy
- values in the lower half of the vector. This strongly reduces mistakes in indexing.
+ \item{Filtering}{because the spectrum is one sided, the user must
+ only modifiy values in the lower half of the vector. This strongly
+ reduces mistakes in indexing.
  See \code{\link{filter.fft}}}
 
-\item{Envelope functions}{Since the Hilbert transform is a perfect phase shifter
+ \item{Envelope functions}{Since the Hilbert transform is a perfect phase shifter
  by pi/2, the envelope of a band limited signal can be calculated.
  See \code{\link{envelope}}}
 
-\item{Calculations}{Deriving and integrating on bandlimited discrete data becomes
+ \item{Calculations}{Deriving and integrating on band limited discrete data becomes
  possible, without taking the symmetry of the discrete Fourier transform into
- account. The secound Example of the \code{\link{spec.fft}} function calculates
- the derivative as well, but plays with a certered spectrum and its corresponding
+ account. The secound example of the \code{\link{spec.fft}} function calculates
+ the derivative as well, but plays with a centered spectrum and its corresponding
  "true" negative frequencies}
 }
 A slightly different approach on the analytic signal can be found in R. Hoffmann

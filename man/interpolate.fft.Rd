@@ -21,9 +21,10 @@ value evaluates the error of the interpolation with respect to linear approximat
 with the \code{approx()} function.
 }
 \description{
-There are two way to interpolate data from a given spectrum.
+There are two ways to interpolate data from a given spectrum.
 Frist, one can do zero padding to cover \code{n} new data points. Or, secound
 the complex amplitude with the associated frequency is taken and evaluated
 at given points \code{xout}. Doing that for all frequencies and amplitudes
-will give the interpolation.
+will give the interpolation. The result is compared to linear approximation
+for didactic reasons.
 }

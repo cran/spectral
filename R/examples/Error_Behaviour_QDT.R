@@ -1,7 +1,7 @@
 #### Numerischer Test für Fehler bei Quadratur demodulation
 
 w <- 2*pi*1.125
-v <- 0.1
+v <- 0.1 # sigma of noise
 
 
 dx <- 1e-2
@@ -19,27 +19,27 @@ nO <- ifelse(round(nO) > floor(nO) ,round(nO),floor(nO))
 
 dN <- as.integer((max(x) - nO*pi/(4*w))/dx) + 1
 
-# windows()
+ windows()
 
 res <- NULL
 
-e <- qnorm(1-1e-3) * 2 * v / (sqrt(length(x)))
+e <- qnorm(1 - 1e-3) * 2 * v / (sqrt(length(x)))
 
 
-n <- 0*rnorm(length(x),0,v)
-p <- 0*rnorm(1)
+n <- 1*rnorm(length(x),0,v)
+p <- 1*rnorm(1)
 
-y <- cos(w*x+p)  + n
+y <- cos(w*x + p)  + n
 
 ak <- 2/N * sum(y*cos(w*x))
 bk <- 2/N * sum(y*sin(w*x))
 
-A <- sqrt(ak^2+bk^2)
+A <- sqrt(ak^2 + bk^2)
 
-eak <- dN/N * (1   - 2/3 * (w*max(x))^2 * (dN/N)^2 ) - 0*ifelse(ak>bk,0.5*bk/ak*(1-(1-dN/N)^2),0)
+eak <- dN/N * (1   - 2/3 * (w*max(x))^2 * (dN/N)^2 ) - 1*ifelse(ak>bk,0.5*bk/ak*(1-(1-dN/N)^2),0)
 
 
-ebk <- - dN/N*( 1 - 4/3 * (w*max(x))^2 * dN^2/(N^2)) - 0*ifelse(bk>ak,0.5*ak/bk*(1-(1-dN/N)^2),0)
+ebk <- - dN/N*( 1 - 4/3 * (w*max(x))^2 * dN^2/(N^2)) - 1*ifelse(bk>ak,0.5*ak/bk*(1-(1-dN/N)^2),0)
 # das geht aber im Quotienten dürfte kein n stehen.
 
 e <- sqrt(ebk^2+eak^2)

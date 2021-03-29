@@ -13,23 +13,27 @@ Some typical windowfunctions are defined below:
 \details{
 \describe{
    \item{\code{win.cos()}}{cosine window}
-   \item{\code{win.tukey()}}{the tukey window}
+   \item{\code{win.tukey()}}{Tukey window}
+   \item{\code{win.hann()}}{Hann window}
+   \item{\code{win.nutt()}}{Nutt window}
 }
 
 A window function weights a given dataset in a way, that the new data set is
-coerced to be periodic. This method reduces the leakage effects of the Fourier
-transform.
+coerced to be periodic. This method reduces the leakage effects of the
+discrete Fourier transform.
 }
 \examples{
 y <- 1:100
 y_cos <- y * win.cos(y)
 y_tuk <- y * win.tukey(y)
+y_han <- y * win.hann(y)
 
 # Plot the original data
 plot(y,main="Effect of window functions")
-legend("topleft",c("original","cos","tukey"),pch=c(16,17))
+legend("topleft",c("original","cos","tukey","han"),pch=c(1,16,17,18))
 points(y_cos,pch=16)
 points(y_tuk,pch=17)
+points(y_han,pch=18)
 
 
 }

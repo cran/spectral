@@ -4,8 +4,14 @@
 \alias{filter.fft}
 \title{Filter in the frequency domain}
 \usage{
-filter.fft(y = stop("y-value is missing"), x = NULL, fc = 0,
-  BW = 0, n = 3)
+filter.fft(
+  y = stop("y-value is missing"),
+  x = NULL,
+  fc = 0,
+  BW = 0,
+  n = 3,
+  type = "poly"
+)
 }
 \arguments{
 \item{y}{numeric data vector}
@@ -17,9 +23,11 @@ filter.fft(y = stop("y-value is missing"), x = NULL, fc = 0,
 \item{BW}{bandwith of the bandpass}
 
 \item{n}{parameter to control the stiffness of the bandpass}
+
+\item{type}{type of weightening function: "poly", "sinc", "bi-cubic","gauss", can be abbreviated}
 }
 \description{
-This function provides a method to bandpass filter in the frequency domain.
+This function provides a method to band pass filter in the frequency domain.
 }
 \details{
 A signal \eqn{y} is meant to be equaly spaced and causal, which means it starts
@@ -28,9 +36,11 @@ itself takes place with the analytic function of \eqn{y} which provides an one s
 spectrum. Applying the Fourier transform, all properties of \eqn{y} will be
 preserved.
 
-The applied bandpass filter function is a simple polynomial approach, which
-weights the frequencies. Setting \code{fc = 0} one can achieve a low pass
-filter.
+The band pass is represented throughout a function in the form of four different types, i.e.
+"polynom", "sin(x)/x", "bi-cubic", "gauss". A detailed
+description about these types can be found in \code{\link{BP}}.
+
+Setting \code{fc = 0} one can achieve a low pass filter.
 }
 \examples{
 ## noisy signal with amplitude modulation

@@ -1,6 +1,6 @@
 #' Filter in the frequency domain
 #'
-#' This function provides a method to bandpass filter in the frequency domain.
+#' This function provides a method to band pass filter in the frequency domain.
 #'
 #' A signal \eqn{y} is meant to be equaly spaced and causal, which means it starts
 #' at \eqn{t=0}. For times \eqn{y < 0} the signal is not defined. The filtering
@@ -8,15 +8,19 @@
 #' spectrum. Applying the Fourier transform, all properties of \eqn{y} will be
 #' preserved.
 #'
-#' The applied bandpass filter function is a simple polynomial approach, which
-#' weights the frequencies. Setting \code{fc = 0} one can achieve a low pass
-#' filter.
+#' The band pass is represented throughout a function in the form of four different types, i.e.
+#' "polynom", "sin(x)/x", "bi-cubic", "gauss". A detailed
+#' description about these types can be found in \code{\link{BP}}.
+#'
+#' Setting \code{fc = 0} one can achieve a low pass filter.
 #'
 #' @param y numeric data vector
 #' @param x optional x-coordinate
 #' @param fc center frequency of the bandpass
 #' @param BW bandwith of the bandpass
 #' @param n parameter to control the stiffness of the bandpass
+#' @param type type of weightening function: "poly", "sinc", "bi-cubic","gauss", can be abbreviated
+#'
 #' @examples
 #' ## noisy signal with amplitude modulation
 #' x <- seq(0,1, length.out=500)
@@ -38,7 +42,7 @@
 #'         ,lty=c(1,2,1),lwd=c(5,1,1))
 #' @export
 filter.fft <-
-  function(y = stop("y-value is missing"),x = NULL,fc = 0,BW = 0,n = 3)
+  function(y = stop("y-value is missing"),x = NULL,fc = 0,BW = 0,n = 3,type = "poly")
   {
     if (!is.vector(y))
       stop("y must be a vector")
@@ -50,7 +54,7 @@ filter.fft <-
     # calculate spectrum
     FT <- spec.fft(y = y.ana,x = x,center = F)
     # calculate weights for filtering
-    w <- BP(FT$fx,fc,BW,n)
+    w <- BP(FT$fx,fc,BW,n, type)
 
     # do the filtering
     FT$A <- w * FT$A

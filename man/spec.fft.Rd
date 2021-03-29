@@ -18,17 +18,43 @@ or object of class \code{fft}}
 }
 \value{
 An object of the type \code{fft} is returned. It contains the
-spectrum, with "reasonable" frequency vectors along each axis.
+spectrum \code{A}, with "reasonable" frequency vectors along each ordinate. \code{psd} represents
+the standardized power spectral density, [0,1]. The false alarm probability (FAP)
+\code{p} is given similar to the Lomb-Scargle method, see \link{spec.lomb}.
 }
 \description{
-This function calculates the Fourier spectrum of a given data object. The
-dimension of the array can be of arbitary size e.g. 3D or 4D.
-The goal is to return a user friendly object, which contains as much frequency
-vectors as ordinates of the array are present. \code{spec.fft} provides the
-ability to center the spectrum along multiple axis. The output is already
+This function calculates the Fourier spectrum and power spectral density
+of a given data object. The dimension of the array can be of arbitary size
+e. g. 3D or 4D.
+}
+\details{
+The function returns an user friendly object, which contains as much frequency
+vectors as ordinates of the array. \code{spec.fft} provides the
+ability to center the spectrum along multiple axis. The amplitude output is already
 normalized to the sample count and the frequencies are given in terms of
 \eqn{1/\Delta x}-units.
 }
+\section{Missing Values}{
+
+
+Given a regualar grid \eqn{x_i = \delta x \cdot i} there might be missing values
+marked with \code{NA}, which are treated by the function as 0's.
+This "zero-padding" leads to a loss of signal energy being
+roughly proportional to the number of missing values.
+The correction factor is then \eqn{(1 - Nna/N)} as long as \eqn{Nna / N < 0.2}.
+If the locations of missing values are randomly
+distributed the implemented procedure workes quite robust. If correalted
+gaps are present, the proposed correction is faulty and
+scales wrong. This is because a convolution of the incomplete
+sampling vector with the the signal takes place. An aliasing effect
+takes place distorting the spectral content.
+
+To be compatible with the underlying Fourier transform, the amplitudes
+are not affected by this rescaling.
+Only the power spectral density (PSD) is corrected in terms of the energy
+content, which is experimental for the moment.
+}
+
 \examples{
 # 1D Example with two frequencies
 #################################
@@ -46,12 +72,13 @@ plot(
   xlim = c(-30, 30),
   main = "Spectrum"
 )
+summary(FT)
 
 # 2D example with a propagating wave
 ####################################
 
-x <- seq(0, 1, length.out = 1e2)
-y <- seq(0, 1, length.out = 1e2)
+x <- seq(0, 1, length.out = 50)
+y <- seq(0, 1, length.out = 50)
 
 # calculate the data
 m <- matrix(0, length(x), length(y))
@@ -85,13 +112,14 @@ plot(
   ,
   z.cex = 1
 )
+summary(FT)
 
 # 3D example with a propagating wave
 ####################################
 
 # sampling vector
-x <- list(x = seq(0,2,by = 0.05)[-1]
-          ,y = seq(0,1, by = 0.05)[-1]
+x <- list(x = seq(0,2,by = 0.1)[-1]
+          ,y = seq(0,1, by = 0.1)[-1]
           ,z = seq(0,1, by = 0.1)[-1]
 )
 
@@ -101,7 +129,7 @@ m <- array(data = 0,dim = sapply(x, length))
 for(i in 1:length(x$x))
   for(j in 1:length(x$y))
     for(k in 1:length(x$z))
-      m[i,j,k] <- cos(2*pi*(5*x$x[i] + 4*x$y[j] + 2*x$z[k])) + sin(2*pi*(2*x$x[i]))^2
+      m[i,j,k] <- cos(2*pi*(1*x$x[i] + 2*x$y[j] + 2*x$z[k])) + sin(2*pi*(1.5*x$x[i]))^2
 
 FT <- spec.fft(x = x, y = m, center = c(TRUE,TRUE,FALSE))
 
@@ -136,6 +164,7 @@ rasterImage2( x = FT$fx
               ,main="m = 3"
 )
 
+summary(FT)
 
 
 # calculating the derivative with the help of FFT

@@ -4,12 +4,25 @@
 \alias{plot.lomb}
 \title{plot method for Lomb-Scargle periodograms}
 \usage{
-\method{plot}{lomb}(x, FAPcol = 1, FAPlwd = 1, FAPlty = "dashed",
-  FAPlim = c(1, 0.001), FAPlab = "FAP", legend.pos = "topleft",
-  legend.cex = 1, legend.on = T, legend.text = c("Spectrum",
-  "False Alarm Probability"), legend.lwd = NULL, legend.lty = NULL,
-  legend.col = NULL, xlab = "Frequency", ylab = "Normalized PSD",
-  main = "", ...)
+\method{plot}{lomb}(
+  x,
+  FAPcol = 1,
+  FAPlwd = 1,
+  FAPlty = "dashed",
+  FAPlim = c(1, 0.001),
+  FAPlab = "FAP",
+  legend.pos = "topleft",
+  legend.cex = 1,
+  legend.on = T,
+  legend.text = c("Spectrum", "False Alarm Probability"),
+  legend.lwd = NULL,
+  legend.lty = NULL,
+  legend.col = NULL,
+  xlab = "Frequency",
+  ylab = "Normalized PSD",
+  main = "",
+  ...
+)
 }
 \arguments{
 \item{x}{object of class \code{lomb}}
